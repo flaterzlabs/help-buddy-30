@@ -14,16 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          parent_educator_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_educator_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_educator_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_parent_educator_id_fkey"
+            columns: ["parent_educator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "connections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      help_requests: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          resolved_at: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resolved_at?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          resolved_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mood_logs: {
+        Row: {
+          created_at: string
+          id: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: Database["public"]["Enums"]["mood_type"]
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          connection_code: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          connection_code?: string | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          connection_code?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_connection_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      mood_type: "happy" | "sad" | "calm" | "excited" | "focused"
+      user_role: "student" | "parent" | "educator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +280,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      mood_type: ["happy", "sad", "calm", "excited", "focused"],
+      user_role: ["student", "parent", "educator"],
+    },
   },
 } as const
