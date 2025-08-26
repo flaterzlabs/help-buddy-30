@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface LoginFormProps {
   onLogin: (username: string) => void;
@@ -23,6 +24,9 @@ export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
     <div className="min-h-screen bg-gradient-primary flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-6">
+          <div className="flex justify-end mb-4">
+            <ThemeToggle />
+          </div>
           <div className="mx-auto w-20 h-20 bg-gradient-warm rounded-full flex items-center justify-center shadow-large">
             <Users size={40} className="text-warning-foreground" />
           </div>

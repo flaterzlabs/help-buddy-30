@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HandHeart, Smile, Frown, Meh, Zap, LogOut } from "lucide-react";
+import { HandHeart, Smile, Frown, Meh, Zap, LogOut, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { BuddyAvatar } from "@/components/BuddyAvatar";
+import { StudentAvatar } from "@/components/StudentAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface StudentDashboardProps {
@@ -25,10 +25,14 @@ const moods = [
 export function StudentDashboard({ username, onLogout }: StudentDashboardProps) {
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [helpRequested, setHelpRequested] = useState(false);
-  const [buddyConfig, setBuddyConfig] = useState(() => {
-    const saved = localStorage.getItem(`buddy-config-${username}`);
-    return saved ? JSON.parse(saved) : undefined;
+  const [connectionCode, setConnectionCode] = useState(() => {
+    const saved = localStorage.getItem(`connection-code-${username}`);
+    return saved || Math.random().toString(36).substring(2, 8).toUpperCase();
   });
+
+  useEffect(() => {
+    localStorage.setItem(`connection-code-${username}`, connectionCode);
+  }, [connectionCode, username]);
 
   const handleHelpRequest = () => {
     setHelpRequested(true);
@@ -52,9 +56,12 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
     });
   };
 
-  const handleBuddyConfigChange = (config: any) => {
-    setBuddyConfig(config);
-    localStorage.setItem(`buddy-config-${username}`, JSON.stringify(config));
+  const copyConnectionCode = () => {
+    navigator.clipboard.writeText(connectionCode);
+    toast.success("Código copiado!", {
+      description: "Compartilhe com seus pais ou professores",
+      duration: 2000,
+    });
   };
 
   return (
@@ -83,40 +90,64 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
           </div>
         </div>
 
-        {/* Buddy Virtual */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-center text-lg">
-              Seu Buddy Virtual 🤖
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="flex flex-col items-center gap-4">
-              <BuddyAvatar 
-                mood={selectedMood || 'happy'}
-                config={buddyConfig}
-                onConfigChange={handleBuddyConfigChange}
-                showEditor={true}
-              />
-              
-              <div className="space-y-2">
-                {selectedMood ? (
-                  <p className="text-sm text-muted-foreground">
-                    "Vejo que você está se sentindo{" "}
-                    <span className="font-medium text-foreground">
-                      {moods.find(m => m.value === selectedMood)?.label.toLowerCase()}
-                    </span>
-                    . Estou aqui para te ajudar! 💙"
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    "Olá! Como você está se sentindo hoje? 😊"
-                  </p>
-                )}
+        {/* Avatar e Código de Conexão */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-center text-lg">
+                Seu Avatar 🎭
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="flex flex-col items-center gap-4">
+                <StudentAvatar username={username} size={100} />
+                
+                <div className="space-y-2">
+                  {selectedMood ? (
+                    <p className="text-sm text-muted-foreground">
+                      "Vejo que você está se sentindo{" "}
+                      <span className="font-medium text-foreground">
+                        {moods.find(m => m.value === selectedMood)?.label.toLowerCase()}
+                      </span>
+                      . Estou aqui para te ajudar! 💙"
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      "Olá! Como você está se sentindo hoje? 😊"
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-center text-lg">
+                Seu Código de Conexão 🔗
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-3xl font-bold text-primary bg-primary/10 px-6 py-3 rounded-lg border-2 border-primary/20">
+                  {connectionCode}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyConnectionCode}
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Copiar Código
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Compartilhe este código com seus pais ou professores para que eles possam se conectar com você
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Botão de Ajuda Principal */}

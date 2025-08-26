@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Users, GraduationCap, Heart, ArrowLeft } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export type UserRole = 'student' | 'parent' | 'educator';
 
@@ -38,6 +39,9 @@ export function RoleSelector({ onRoleSelect, onBack }: RoleSelectorProps) {
     <div className="min-h-screen bg-gradient-primary flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-4">
+          <div className="flex justify-end mb-4">
+            <ThemeToggle />
+          </div>
           <h1 className="text-3xl font-bold text-primary-foreground">
             Quem é você?
           </h1>

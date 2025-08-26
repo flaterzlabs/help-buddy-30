@@ -68,8 +68,9 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
 
   const handleConnectStudent = () => {
     if (connectionCode.trim()) {
+      const entityName = role === 'educator' ? 'Aluno' : 'Filho';
       toast.success(`Código ${connectionCode} usado!`, {
-        description: "Filho conectado com sucesso",
+        description: `${entityName} conectado com sucesso`,
         duration: 3000,
       });
       setConnectionCode("");
@@ -103,7 +104,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
               Dashboard {role === 'parent' ? 'dos Pais' : 'do Educador'}
             </h1>
             <p className="text-muted-foreground mt-2">
-              Bem-vindo, {username}! Monitore e ajude seus filhos conectados.
+              Bem-vindo, {username}! Monitore e ajude seus {role === 'educator' ? 'alunos' : 'filhos'} conectados.
             </p>
           </div>
           
@@ -128,7 +129,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                 <AlertCircle className="w-5 h-5 text-warning animate-pulse" />
                 <div>
                   <p className="font-semibold text-warning-foreground">
-                    {studentsNeedingHelp.length} filho(s) precisam de ajuda!
+                    {studentsNeedingHelp.length} {role === 'educator' ? 'aluno(s)' : 'filho(s)'} precisam de ajuda!
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Verifique a lista abaixo e ofereça suporte.
@@ -145,7 +146,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Filhos Conectados</p>
+                  <p className="text-sm text-muted-foreground">{role === 'educator' ? 'Alunos' : 'Filhos'} Conectados</p>
                   <p className="text-3xl font-bold text-foreground">{students.length}</p>
                 </div>
                 <Users className="w-8 h-8 text-primary" />
@@ -206,13 +207,13 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
-              Conectar Novo Filho
+              Conectar Novo {role === 'educator' ? 'Aluno' : 'Filho'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
               <Input
-                placeholder="Digite o código do seu filho (ex: ABCD123)"
+                placeholder={`Digite o código do seu ${role === 'educator' ? 'aluno' : 'filho'} (ex: ABCD123)`}
                 value={connectionCode}
                 onChange={(e) => setConnectionCode(e.target.value.toUpperCase())}
                 className="focus-ring"
@@ -226,7 +227,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Seu filho precisa gerar um código em sua tela para que você possa se conectar.
+              Seu {role === 'educator' ? 'aluno' : 'filho'} precisa gerar um código em sua tela para que você possa se conectar.
             </p>
           </CardContent>
         </Card>
@@ -265,7 +266,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Meus Filhos ({students.length})
+              Meus {role === 'educator' ? 'Alunos' : 'Filhos'} ({students.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -326,8 +327,8 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
               {students.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum filho conectado ainda.</p>
-                  <p className="text-sm">Use o código de conexão acima para conectar seu filho.</p>
+                  <p>Nenhum {role === 'educator' ? 'aluno' : 'filho'} conectado ainda.</p>
+                  <p className="text-sm">Use o código de conexão acima para conectar seu {role === 'educator' ? 'aluno' : 'filho'}.</p>
                 </div>
               )}
             </div>
