@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut, Users, Clock, AlertCircle, Plus, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import type { UserRole } from "./RoleSelector";
 
 interface ParentEducatorDashboardProps {
@@ -14,85 +16,28 @@ interface ParentEducatorDashboardProps {
   onLogout: () => void;
 }
 
-interface ConnectedStudent {
-  id: string;
-  name: string;
-  status: 'ok' | 'needs_help' | 'away';
-  mood?: string;
-  lastSeen: string;
-  connectionCode?: string;
-}
-
-interface HelpRequest {
-  id: string;
-  studentName: string;
-  timestamp: string;
-  mood?: string;
-  resolved: boolean;
-}
-
-// Mock data para demonstração - apenas uma criança conectada
-const mockStudents: ConnectedStudent[] = [
-  {
-    id: '1',
-    name: 'Meu Filho',
-    status: 'ok',
-    mood: 'Feliz',
-    lastSeen: '2 minutos atrás',
-    connectionCode: 'ABC123'
-  }
-];
-
-const mockHelpHistory: HelpRequest[] = [
-  {
-    id: '1',
-    studentName: 'Meu Filho',
-    timestamp: '2024-01-15 14:30',
-    mood: 'Preocupado',
-    resolved: true
-  },
-  {
-    id: '2', 
-    studentName: 'Meu Filho',
-    timestamp: '2024-01-15 10:15',
-    mood: 'Confuso',
-    resolved: true
-  }
-];
-
 export function ParentEducatorDashboard({ username, role, onLogout }: ParentEducatorDashboardProps) {
-  const [students, setStudents] = useState<ConnectedStudent[]>(mockStudents);
   const [connectionCode, setConnectionCode] = useState('');
-  const [helpHistory, setHelpHistory] = useState<HelpRequest[]>(mockHelpHistory);
   const [showHistory, setShowHistory] = useState(false);
+  const { profile } = useAuth();
+  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(profile?.user_id);
 
-  const handleConnectStudent = () => {
+  const handleConnectStudent = async () => {
     if (connectionCode.trim()) {
-      const entityName = role === 'educator' ? 'Aluno' : 'Filho';
-      toast.success(`Código ${connectionCode} usado!`, {
-        description: `${entityName} conectado com sucesso`,
-        duration: 3000,
-      });
-      setConnectionCode("");
+      const success = await connectToStudent(connectionCode.trim());
+      if (success) {
+        setConnectionCode("");
+      }
     }
   };
 
-  const handleHelpStudent = (studentId: string) => {
-    setStudents(prev => 
-      prev.map(student => 
-        student.id === studentId 
-          ? { ...student, status: 'ok' as const }
-          : student
-      )
-    );
-    const student = students.find(s => s.id === studentId);
-    toast.success(`Ajuda fornecida para ${student?.name}`, {
-      description: "Status atualizado para OK",
-      duration: 3000,
-    });
-  };
+  // Filtrar pedidos de ajuda ativos dos alunos conectados
+  const activeHelpRequests = helpRequests.filter(req => 
+    req.is_active && connections.some(conn => conn.student_id === req.student_id)
+  );
 
-  const studentsNeedingHelp = students.filter(s => s.status === 'needs_help');
+  // Contar alunos online (assumindo que são online se tiveram atividade recente)
+  const onlineStudents = connections.length;
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -122,14 +67,14 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
         </div>
 
         {/* Notificações de Pedidos de Ajuda */}
-        {studentsNeedingHelp.length > 0 && (
+        {activeHelpRequests.length > 0 && (
           <Card className="shadow-soft border-warning bg-warning/5">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-warning animate-pulse" />
                 <div>
                   <p className="font-semibold text-warning-foreground">
-                    {studentsNeedingHelp.length} {role === 'educator' ? 'aluno(s)' : 'filho(s)'} precisam de ajuda!
+                    {activeHelpRequests.length} {role === 'educator' ? 'aluno(s)' : 'filho(s)'} precisam de ajuda!
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Verifique a lista abaixo e ofereça suporte.
@@ -147,7 +92,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{role === 'educator' ? 'Alunos' : 'Filhos'} Conectados</p>
-                  <p className="text-3xl font-bold text-foreground">{students.length}</p>
+                  <p className="text-3xl font-bold text-foreground">{connections.length}</p>
                 </div>
                 <Users className="w-8 h-8 text-primary" />
               </div>
@@ -160,7 +105,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                 <div>
                   <p className="text-sm text-muted-foreground">Precisam de Ajuda</p>
                   <p className="text-3xl font-bold text-warning">
-                    {studentsNeedingHelp.length}
+                    {activeHelpRequests.length}
                   </p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-warning" />
@@ -174,7 +119,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                 <div>
                   <p className="text-sm text-muted-foreground">Online Agora</p>
                   <p className="text-3xl font-bold text-success">
-                    {students.filter(s => s.status !== 'away').length}
+                    {onlineStudents}
                   </p>
                 </div>
                 <Clock className="w-8 h-8 text-success" />
@@ -193,7 +138,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                     onClick={() => setShowHistory(!showHistory)}
                     className="p-0 h-auto font-bold text-2xl"
                   >
-                    {helpHistory.length}
+                    {helpRequests.length}
                   </Button>
                 </div>
                 <History className="w-8 h-8 text-accent" />
@@ -220,10 +165,10 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
               />
               <Button 
                 onClick={handleConnectStudent}
-                disabled={!connectionCode.trim()}
+                disabled={!connectionCode.trim() || loading}
                 className="transition-gentle"
               >
-                Conectar
+                {loading ? "Conectando..." : "Conectar"}
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
@@ -243,88 +188,89 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {helpHistory.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div>
-                      <p className="font-medium">{request.studentName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {request.timestamp} {request.mood && `• Humor: ${request.mood}`}
-                      </p>
-                    </div>
-                    <Badge variant={request.resolved ? "secondary" : "destructive"}>
-                      {request.resolved ? "Resolvido" : "Pendente"}
-                    </Badge>
+                {helpRequests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum pedido de ajuda ainda.</p>
                   </div>
-                ))}
+                ) : (
+                  helpRequests.map((request) => {
+                    const connection = connections.find(conn => conn.student_id === request.student_id);
+                    const studentName = connection?.student_profile?.username || 'Aluno desconhecido';
+                    
+                    return (
+                      <div key={request.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                        <div>
+                          <p className="font-medium">{studentName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(request.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <Badge variant={request.is_active ? "destructive" : "secondary"}>
+                          {request.is_active ? "Ativo" : "Resolvido"}
+                        </Badge>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Lista de Filhos */}
+        {/* Lista de Alunos/Filhos */}
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Meus {role === 'educator' ? 'Alunos' : 'Filhos'} ({students.length})
+              Meus {role === 'educator' ? 'Alunos' : 'Filhos'} ({connections.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {students.map((student) => (
-                <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card transition-gentle hover:shadow-soft">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-3 h-3 rounded-full ${
-                      student.status === 'ok' ? 'bg-success' :
-                      student.status === 'needs_help' ? 'bg-warning animate-pulse' :
-                      'bg-muted'
-                    }`} />
-                    <div>
-                      <h3 className="font-semibold text-foreground">{student.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>{student.lastSeen}</span>
-                        {student.mood && (
-                          <>
-                            <span>•</span>
-                            <span>Humor: {student.mood}</span>
-                          </>
-                        )}
-                        {student.connectionCode && (
-                          <>
-                            <span>•</span>
-                            <span>Código: {student.connectionCode}</span>
-                          </>
-                        )}
+              {connections.map((connection) => {
+                const studentName = connection.student_profile?.username || 'Nome não encontrado';
+                const studentCode = connection.student_profile?.connection_code || '';
+                const hasActiveHelp = activeHelpRequests.some(req => req.student_id === connection.student_id);
+                const latestMood = moodLogs.find(log => log.student_id === connection.student_id);
+                
+                return (
+                  <div key={connection.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card transition-gentle hover:shadow-soft">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full ${
+                        hasActiveHelp ? 'bg-warning animate-pulse' : 'bg-success'
+                      }`} />
+                      <div>
+                        <h3 className="font-semibold text-foreground">{studentName}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>Conectado desde {new Date(connection.created_at).toLocaleDateString('pt-BR')}</span>
+                          {latestMood && (
+                            <>
+                              <span>•</span>
+                              <span>Humor: {latestMood.mood}</span>
+                            </>
+                          )}
+                          {studentCode && (
+                            <>
+                              <span>•</span>
+                              <span>Código: {studentCode}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Badge variant={
-                      student.status === 'ok' ? 'secondary' :
-                      student.status === 'needs_help' ? 'destructive' :
-                      'outline'
-                    }>
-                      {student.status === 'ok' ? 'OK' :
-                       student.status === 'needs_help' ? 'Precisa de Ajuda' :
-                       'Ausente'}
-                    </Badge>
                     
-                    {student.status === 'needs_help' && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleHelpStudent(student.id)}
-                        className="transition-gentle"
-                      >
-                        Ajudar
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Badge variant={hasActiveHelp ? 'destructive' : 'secondary'}>
+                        {hasActiveHelp ? 'Precisa de Ajuda' : 'OK'}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               
-              {students.length === 0 && (
+              {connections.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhum {role === 'educator' ? 'aluno' : 'filho'} conectado ainda.</p>

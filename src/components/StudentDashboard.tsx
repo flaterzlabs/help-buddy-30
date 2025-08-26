@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HandHeart, Smile, Frown, Meh, Zap, LogOut, Copy } from "lucide-react";
+import { HandHeart, Smile, Frown, Meh, Zap, LogOut, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { StudentAvatar } from "@/components/StudentAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 interface StudentDashboardProps {
   username: string;
@@ -24,32 +26,24 @@ const moods = [
 
 export function StudentDashboard({ username, onLogout }: StudentDashboardProps) {
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
-  const [helpRequested, setHelpRequested] = useState(false);
-  const [connectionCode, setConnectionCode] = useState(() => {
-    const saved = localStorage.getItem(`connection-code-${username}`);
-    return saved || Math.random().toString(36).substring(2, 8).toUpperCase();
-  });
+  const [avatarSeed, setAvatarSeed] = useState(username);
+  const { profile } = useAuth();
+  const { logMood, createHelpRequest, helpRequests } = useSupabaseData(profile?.user_id);
 
-  useEffect(() => {
-    localStorage.setItem(`connection-code-${username}`, connectionCode);
-  }, [connectionCode, username]);
+  // Verificar se existe pedido de ajuda ativo
+  const activeHelpRequest = helpRequests.find(req => req.is_active);
 
-  const handleHelpRequest = () => {
-    setHelpRequested(true);
-    toast.success("Pedido de ajuda enviado! 🚨", {
-      description: "Alguém virá te ajudar em breve",
-      duration: 4000,
-    });
-    
-    // Simular reset depois de um tempo
-    setTimeout(() => {
-      setHelpRequested(false);
-    }, 10000);
+  const handleHelpRequest = async () => {
+    await createHelpRequest();
   };
 
-  const handleMoodSelect = (mood: MoodType) => {
+  const handleMoodSelect = async (mood: MoodType) => {
     setSelectedMood(mood);
     const moodName = moods.find(m => m.value === mood)?.label || mood;
+    
+    // Registrar no banco de dados
+    await logMood(mood);
+    
     toast.success("Humor registrado! 😊", {
       description: `Você está se sentindo ${moodName.toLowerCase()}`,
       duration: 3000,
@@ -57,11 +51,18 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
   };
 
   const copyConnectionCode = () => {
-    navigator.clipboard.writeText(connectionCode);
-    toast.success("Código copiado!", {
-      description: "Compartilhe com seus pais ou professores",
-      duration: 2000,
-    });
+    if (profile?.connection_code) {
+      navigator.clipboard.writeText(profile.connection_code);
+      toast.success("Código copiado!", {
+        description: "Compartilhe com seus pais ou professores",
+        duration: 2000,
+      });
+    }
+  };
+
+  const refreshAvatar = () => {
+    setAvatarSeed(Math.random().toString(36).substring(7));
+    toast.success("Avatar atualizado! 🎭");
   };
 
   return (
@@ -100,7 +101,17 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
             </CardHeader>
             <CardContent className="text-center">
               <div className="flex flex-col items-center gap-4">
-                <StudentAvatar username={username} size={100} />
+                <div className="relative">
+                  <StudentAvatar username={avatarSeed} size={100} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshAvatar}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full p-0"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                </div>
                 
                 <div className="space-y-2">
                   {selectedMood ? (
@@ -130,13 +141,14 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
             <CardContent className="text-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="text-3xl font-bold text-primary bg-primary/10 px-6 py-3 rounded-lg border-2 border-primary/20">
-                  {connectionCode}
+                  {profile?.connection_code || "Carregando..."}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={copyConnectionCode}
                   className="flex items-center gap-2"
+                  disabled={!profile?.connection_code}
                 >
                   <Copy className="w-4 h-4" />
                   Copiar Código
@@ -157,14 +169,14 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
                 variant="default"
                 size="lg"
                 onClick={handleHelpRequest}
-                disabled={helpRequested}
-                className={`w-full h-24 text-xl ${helpRequested ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={!!activeHelpRequest}
+                className={`w-full h-24 text-xl ${activeHelpRequest ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <HandHeart className="w-8 h-8 mr-3" />
-                {helpRequested ? "Ajuda enviada!" : "PEDIR AJUDA"}
+                {activeHelpRequest ? "Ajuda enviada!" : "PEDIR AJUDA"}
               </Button>
               
-              {helpRequested && (
+              {activeHelpRequest && (
                 <div className="mt-4 text-center">
                   <p className="text-success font-semibold">✓ Pedido enviado!</p>
                   <p className="text-sm text-muted-foreground">
@@ -208,7 +220,7 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                Status: {helpRequested ? "🚨 Pedido de ajuda ativo" : "✅ Tudo bem"}
+                Status: {activeHelpRequest ? "🚨 Pedido de ajuda ativo" : "✅ Tudo bem"}
               </span>
               <Badge variant="secondary">
                 Conectado

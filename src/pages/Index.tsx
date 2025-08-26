@@ -1,90 +1,38 @@
-import { useState } from "react";
-import { LoginForm } from "@/components/LoginForm";
-import { RoleSelector, type UserRole } from "@/components/RoleSelector";
+import { useAuth } from "@/hooks/useAuth";
 import { StudentDashboard } from "@/components/StudentDashboard";
 import { ParentEducatorDashboard } from "@/components/ParentEducatorDashboard";
 
-type AppState = 'login' | 'roleSelector' | 'dashboard';
-
-interface User {
-  username: string;
-  role: UserRole;
-}
-
 const Index = () => {
-  const [appState, setAppState] = useState<AppState>('login');
-  const [user, setUser] = useState<User | null>(null);
+  const { profile, signOut } = useAuth();
 
-  const handleLogin = (username: string) => {
-    // Por enquanto, simular login como estudante
-    setUser({ username, role: 'student' });
-    setAppState('dashboard');
-  };
-
-  const handleRoleSelect = (role: UserRole) => {
-    const username = prompt(`Digite seu nome para criar conta como ${
-      role === 'student' ? 'Estudante' : 
-      role === 'parent' ? 'Pai/Mãe' : 'Educador'
-    }:`);
-    
-    if (username?.trim()) {
-      setUser({ username: username.trim(), role });
-      setAppState('dashboard');
-    }
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    setAppState('login');
-  };
-
-  const handleShowRoleSelector = () => {
-    setAppState('roleSelector');
-  };
-
-  const handleBackToLogin = () => {
-    setAppState('login');
-  };
-
-  // Renderizar baseado no estado da aplicação
-  switch (appState) {
-    case 'roleSelector':
-      return (
-        <RoleSelector 
-          onRoleSelect={handleRoleSelect}
-          onBack={handleBackToLogin}
-        />
-      );
-    
-    case 'dashboard':
-      if (!user) return null;
-      
-      if (user.role === 'student') {
-        return (
-          <StudentDashboard
-            username={user.username}
-            onLogout={handleLogout}
-          />
-        );
-      } else {
-        return (
-          <ParentEducatorDashboard
-            username={user.username}
-            role={user.role}
-            onLogout={handleLogout}
-          />
-        );
-      }
-    
-    case 'login':
-    default:
-      return (
-        <LoginForm 
-          onLogin={handleLogin}
-          onShowRoleSelector={handleShowRoleSelector}
-        />
-      );
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-muted-foreground">Carregando perfil...</p>
+        </div>
+      </div>
+    );
   }
+
+  // Mostrar dashboard baseado no role
+  if (profile.role === 'student') {
+    return (
+      <StudentDashboard
+        username={profile.username}
+        onLogout={signOut}
+      />
+    );
+  }
+
+  return (
+    <ParentEducatorDashboard
+      username={profile.username}
+      role={profile.role}
+      onLogout={signOut}
+    />
+  );
 };
 
 export default Index;
