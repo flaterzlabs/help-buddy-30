@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Bell, Users, Plus, LogOut, AlertTriangle, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { LogOut, Users, Clock, AlertCircle, Plus, History } from 'lucide-react';
+import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import type { UserRole } from "./RoleSelector";
 
 interface ParentEducatorDashboardProps {
@@ -16,37 +17,59 @@ interface ParentEducatorDashboardProps {
 interface ConnectedStudent {
   id: string;
   name: string;
-  status: 'ok' | 'help-needed';
+  status: 'ok' | 'needs_help' | 'away';
   mood?: string;
   lastSeen: string;
+  connectionCode?: string;
 }
 
-// Dados simulados
+interface HelpRequest {
+  id: string;
+  studentName: string;
+  timestamp: string;
+  mood?: string;
+  resolved: boolean;
+}
+
+// Mock data para demonstração - apenas uma criança conectada
 const mockStudents: ConnectedStudent[] = [
   {
     id: '1',
-    name: 'Ana Maria',
+    name: 'Meu Filho',
     status: 'ok',
-    mood: '😊 Feliz',
-    lastSeen: '5 min atrás'
+    mood: 'Feliz',
+    lastSeen: '2 minutos atrás',
+    connectionCode: 'ABC123'
+  }
+];
+
+const mockHelpHistory: HelpRequest[] = [
+  {
+    id: '1',
+    studentName: 'Meu Filho',
+    timestamp: '2024-01-15 14:30',
+    mood: 'Preocupado',
+    resolved: true
   },
   {
-    id: '2',
-    name: 'João Pedro',
-    status: 'help-needed',
-    mood: '😢 Triste',
-    lastSeen: 'Agora'
+    id: '2', 
+    studentName: 'Meu Filho',
+    timestamp: '2024-01-15 10:15',
+    mood: 'Confuso',
+    resolved: true
   }
 ];
 
 export function ParentEducatorDashboard({ username, role, onLogout }: ParentEducatorDashboardProps) {
   const [students, setStudents] = useState<ConnectedStudent[]>(mockStudents);
-  const [connectionCode, setConnectionCode] = useState("");
+  const [connectionCode, setConnectionCode] = useState('');
+  const [helpHistory, setHelpHistory] = useState<HelpRequest[]>(mockHelpHistory);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleConnectStudent = () => {
     if (connectionCode.trim()) {
       toast.success(`Código ${connectionCode} usado!`, {
-        description: "Estudante conectado com sucesso",
+        description: "Filho conectado com sucesso",
         duration: 3000,
       });
       setConnectionCode("");
@@ -68,184 +91,246 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
     });
   };
 
-  const roleTitle = role === 'parent' ? 'Pai/Mãe' : 'Educador';
-  const studentsNeedingHelp = students.filter(s => s.status === 'help-needed').length;
+  const studentsNeedingHelp = students.filter(s => s.status === 'needs_help');
 
   return (
-    <div className="min-h-screen bg-gradient-accent p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-accent-foreground">
-              Dashboard - {roleTitle}
+            <h1 className="text-3xl font-bold text-foreground">
+              Dashboard {role === 'parent' ? 'dos Pais' : 'do Educador'}
             </h1>
-            <p className="text-accent-foreground/70 text-lg">
-              Bem-vindo, {username}!
+            <p className="text-muted-foreground mt-2">
+              Bem-vindo, {username}! Monitore e ajude seus filhos conectados.
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            {studentsNeedingHelp > 0 && (
-              <Badge className="bg-destructive text-destructive-foreground animate-gentle-pulse">
-                <Bell size={14} />
-                {studentsNeedingHelp} pedindo ajuda
-              </Badge>
-            )}
-            <Button variant="ghost" onClick={onLogout} size="sm">
-              <LogOut size={16} />
+          
+          <div className="flex gap-2">
+            <ThemeToggle />
+            <Button 
+              variant="outline" 
+              onClick={onLogout}
+              className="transition-gentle focus-ring"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
               Sair
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Estatísticas */}
-          <Card className="shadow-large">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users size={20} />
-                Resumo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span>Estudantes conectados:</span>
-                <Badge variant="secondary">{students.length}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Pedindo ajuda:</span>
-                <Badge className={studentsNeedingHelp > 0 ? "bg-destructive" : "bg-success"}>
-                  {studentsNeedingHelp}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Tudo bem:</span>
-                <Badge className="bg-success">
-                  {students.length - studentsNeedingHelp}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Conectar Novo Estudante */}
-          <Card className="shadow-large">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus size={20} />
-                Conectar Estudante
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  placeholder="Código do estudante"
-                  value={connectionCode}
-                  onChange={(e) => setConnectionCode(e.target.value)}
-                  className="focus-ring"
-                />
-              </div>
-              <Button 
-                onClick={handleConnectStudent}
-                className="w-full"
-                disabled={!connectionCode.trim()}
-              >
-                Conectar
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                O estudante deve fornecer o código gerado no app
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Notificações */}
-          <Card className="shadow-large">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell size={20} />
-                Notificações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {studentsNeedingHelp === 0 ? (
-                <div className="text-center py-4">
-                  <CheckCircle className="mx-auto mb-2 text-success" size={24} />
+        {/* Notificações de Pedidos de Ajuda */}
+        {studentsNeedingHelp.length > 0 && (
+          <Card className="shadow-soft border-warning bg-warning/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-warning animate-pulse" />
+                <div>
+                  <p className="font-semibold text-warning-foreground">
+                    {studentsNeedingHelp.length} filho(s) precisam de ajuda!
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    Nenhum pedido de ajuda ativo
+                    Verifique a lista abaixo e ofereça suporte.
                   </p>
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <AlertTriangle className="mx-auto mb-2 text-destructive animate-gentle-pulse" size={24} />
-                  <p className="text-sm font-semibold">
-                    {studentsNeedingHelp} estudante(s) precisam de ajuda!
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="shadow-soft">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Filhos Conectados</p>
+                  <p className="text-3xl font-bold text-foreground">{students.length}</p>
+                </div>
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Precisam de Ajuda</p>
+                  <p className="text-3xl font-bold text-warning">
+                    {studentsNeedingHelp.length}
                   </p>
                 </div>
-              )}
+                <AlertCircle className="w-8 h-8 text-warning" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Online Agora</p>
+                  <p className="text-3xl font-bold text-success">
+                    {students.filter(s => s.status !== 'away').length}
+                  </p>
+                </div>
+                <Clock className="w-8 h-8 text-success" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Histórico</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="p-0 h-auto font-bold text-2xl"
+                  >
+                    {helpHistory.length}
+                  </Button>
+                </div>
+                <History className="w-8 h-8 text-accent" />
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Lista de Estudantes */}
-        <Card className="shadow-large">
+        {/* Conectar Novo Estudante */}
+        <Card className="shadow-soft mb-8">
           <CardHeader>
-            <CardTitle>Estudantes Conectados</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              Conectar Novo Filho
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {students.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="mx-auto mb-4 text-muted-foreground" size={48} />
-                <p className="text-muted-foreground">
-                  Nenhum estudante conectado ainda
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Use o código de conexão para vincular estudantes
-                </p>
+            <div className="flex gap-4">
+              <Input
+                placeholder="Digite o código do seu filho (ex: ABCD123)"
+                value={connectionCode}
+                onChange={(e) => setConnectionCode(e.target.value.toUpperCase())}
+                className="focus-ring"
+              />
+              <Button 
+                onClick={handleConnectStudent}
+                disabled={!connectionCode.trim()}
+                className="transition-gentle"
+              >
+                Conectar
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Seu filho precisa gerar um código em sua tela para que você possa se conectar.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Histórico de Pedidos de Ajuda */}
+        {showHistory && (
+          <Card className="shadow-soft mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5" />
+                Histórico de Pedidos de Ajuda
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {helpHistory.map((request) => (
+                  <div key={request.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div>
+                      <p className="font-medium">{request.studentName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.timestamp} {request.mood && `• Humor: ${request.mood}`}
+                      </p>
+                    </div>
+                    <Badge variant={request.resolved ? "secondary" : "destructive"}>
+                      {request.resolved ? "Resolvido" : "Pendente"}
+                    </Badge>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-4">
-                {students.map((student) => (
-                  <div 
-                    key={student.id}
-                    className={`p-4 rounded-xl border-2 ${
-                      student.status === 'help-needed' 
-                        ? 'border-destructive bg-destructive/5 shadow-medium' 
-                        : 'border-border bg-card'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full ${
-                          student.status === 'help-needed' ? 'bg-destructive' : 'bg-success'
-                        } animate-gentle-pulse`} />
-                        <div>
-                          <h3 className="font-semibold">{student.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{student.mood}</span>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lista de Filhos */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Meus Filhos ({students.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {students.map((student) => (
+                <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card transition-gentle hover:shadow-soft">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-3 h-3 rounded-full ${
+                      student.status === 'ok' ? 'bg-success' :
+                      student.status === 'needs_help' ? 'bg-warning animate-pulse' :
+                      'bg-muted'
+                    }`} />
+                    <div>
+                      <h3 className="font-semibold text-foreground">{student.name}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>{student.lastSeen}</span>
+                        {student.mood && (
+                          <>
                             <span>•</span>
-                            <span>{student.lastSeen}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          className={student.status === 'help-needed' ? 'bg-destructive' : 'bg-success'}
-                        >
-                          {student.status === 'help-needed' ? 'Precisa de ajuda' : 'OK'}
-                        </Badge>
-                        {student.status === 'help-needed' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleHelpStudent(student.id)}
-                          >
-                            Ajudar
-                          </Button>
+                            <span>Humor: {student.mood}</span>
+                          </>
+                        )}
+                        {student.connectionCode && (
+                          <>
+                            <span>•</span>
+                            <span>Código: {student.connectionCode}</span>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  
+                  <div className="flex items-center gap-3">
+                    <Badge variant={
+                      student.status === 'ok' ? 'secondary' :
+                      student.status === 'needs_help' ? 'destructive' :
+                      'outline'
+                    }>
+                      {student.status === 'ok' ? 'OK' :
+                       student.status === 'needs_help' ? 'Precisa de Ajuda' :
+                       'Ausente'}
+                    </Badge>
+                    
+                    {student.status === 'needs_help' && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleHelpStudent(student.id)}
+                        className="transition-gentle"
+                      >
+                        Ajudar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {students.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum filho conectado ainda.</p>
+                  <p className="text-sm">Use o código de conexão acima para conectar seu filho.</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

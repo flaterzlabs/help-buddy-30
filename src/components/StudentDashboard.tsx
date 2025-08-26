@@ -4,25 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HandHeart, Smile, Frown, Meh, Zap, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import defaultBuddy from "@/assets/default-buddy.png";
+import { BuddyAvatar } from "@/components/BuddyAvatar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface StudentDashboardProps {
   username: string;
   onLogout: () => void;
 }
 
-type MoodType = 'happy' | 'sad' | 'ok' | 'excited';
+type MoodType = 'happy' | 'sad' | 'calm' | 'excited' | 'focused';
 
 const moods = [
-  { id: 'happy' as MoodType, icon: Smile, label: '😊 Feliz', color: 'buddy-happy' },
-  { id: 'ok' as MoodType, icon: Meh, label: '😐 Normal', color: 'buddy-calm' },
-  { id: 'excited' as MoodType, icon: Zap, label: '🤩 Animado', color: 'buddy-excited' },
-  { id: 'sad' as MoodType, icon: Frown, label: '😢 Triste', color: 'destructive' }
+  { value: 'happy' as MoodType, icon: Smile, label: 'Feliz', color: 'buddy-happy' },
+  { value: 'calm' as MoodType, icon: Meh, label: 'Calmo', color: 'buddy-calm' },
+  { value: 'excited' as MoodType, icon: Zap, label: 'Animado', color: 'buddy-excited' },
+  { value: 'sad' as MoodType, icon: Frown, label: 'Triste', color: 'destructive' },
+  { value: 'focused' as MoodType, icon: Zap, label: 'Focado', color: 'accent' }
 ];
 
 export function StudentDashboard({ username, onLogout }: StudentDashboardProps) {
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [helpRequested, setHelpRequested] = useState(false);
+  const [buddyConfig, setBuddyConfig] = useState(() => {
+    const saved = localStorage.getItem(`buddy-config-${username}`);
+    return saved ? JSON.parse(saved) : undefined;
+  });
 
   const handleHelpRequest = () => {
     setHelpRequested(true);
@@ -39,79 +45,97 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
 
   const handleMoodSelect = (mood: MoodType) => {
     setSelectedMood(mood);
-    const selectedMoodData = moods.find(m => m.id === mood);
-    toast.success(`Humor registrado: ${selectedMoodData?.label}`, {
-      description: "Obrigado por compartilhar como você está!",
+    const moodName = moods.find(m => m.value === mood)?.label || mood;
+    toast.success("Humor registrado! 😊", {
+      description: `Você está se sentindo ${moodName.toLowerCase()}`,
       duration: 3000,
     });
   };
 
+  const handleBuddyConfigChange = (config: any) => {
+    setBuddyConfig(config);
+    localStorage.setItem(`buddy-config-${username}`, JSON.stringify(config));
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-secondary p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-secondary-foreground">
+            <h1 className="text-2xl font-bold text-foreground">
               Olá, {username}! 👋
             </h1>
-            <p className="text-secondary-foreground/70 text-lg">
+            <p className="text-muted-foreground mt-1">
               Como posso te ajudar hoje?
             </p>
           </div>
-          <Button variant="ghost" onClick={onLogout} size="sm">
-            <LogOut size={16} />
-            Sair
-          </Button>
+          <div className="flex gap-2">
+            <ThemeToggle />
+            <Button 
+              variant="outline" 
+              onClick={onLogout}
+              className="transition-gentle focus-ring"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Buddy Virtual */}
-          <Card className="shadow-large border-2 border-secondary/30">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Seu Buddy</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <img 
-                  src={defaultBuddy}
-                  alt="Seu Buddy Virtual"
-                  className="w-32 h-32 rounded-full shadow-medium animate-gentle-pulse"
-                />
-                {selectedMood && (
-                  <Badge className={`absolute -bottom-2 -right-2 ${moods.find(m => m.id === selectedMood)?.color} text-xs`}>
-                    {moods.find(m => m.id === selectedMood)?.label}
-                  </Badge>
+        {/* Buddy Virtual */}
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-center text-lg">
+              Seu Buddy Virtual 🤖
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <div className="flex flex-col items-center gap-4">
+              <BuddyAvatar 
+                mood={selectedMood || 'happy'}
+                config={buddyConfig}
+                onConfigChange={handleBuddyConfigChange}
+                showEditor={true}
+              />
+              
+              <div className="space-y-2">
+                {selectedMood ? (
+                  <p className="text-sm text-muted-foreground">
+                    "Vejo que você está se sentindo{" "}
+                    <span className="font-medium text-foreground">
+                      {moods.find(m => m.value === selectedMood)?.label.toLowerCase()}
+                    </span>
+                    . Estou aqui para te ajudar! 💙"
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    "Olá! Como você está se sentindo hoje? 😊"
+                  </p>
                 )}
               </div>
-              <div className="text-center space-y-2">
-                <p className="text-lg font-semibold">Olá, amigo!</p>
-                <p className="text-muted-foreground">
-                  {selectedMood 
-                    ? "Obrigado por me contar como está!" 
-                    : "Como você está se sentindo hoje?"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Botão de Ajuda Principal */}
-          <Card className="shadow-large border-2 border-warning/30">
+          <Card className="shadow-soft">
             <CardContent className="flex flex-col items-center justify-center h-full p-8">
               <Button
-                variant="help"
-                size="help"
+                variant="default"
+                size="lg"
                 onClick={handleHelpRequest}
                 disabled={helpRequested}
-                className={helpRequested ? "opacity-50 cursor-not-allowed" : ""}
+                className={`w-full h-24 text-xl ${helpRequested ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <HandHeart size={32} />
+                <HandHeart className="w-8 h-8 mr-3" />
                 {helpRequested ? "Ajuda enviada!" : "PEDIR AJUDA"}
               </Button>
               
               {helpRequested && (
                 <div className="mt-4 text-center">
-                  <p className="text-green-600 font-semibold">✓ Pedido enviado!</p>
+                  <p className="text-success font-semibold">✓ Pedido enviado!</p>
                   <p className="text-sm text-muted-foreground">
                     Alguém virá te ajudar em breve
                   </p>
@@ -119,37 +143,37 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
               )}
             </CardContent>
           </Card>
+
+          {/* Seletor de Humor */}
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-center text-lg">Como você está hoje?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {moods.map((mood) => {
+                  const IconComponent = mood.icon;
+                  const isSelected = selectedMood === mood.value;
+                  return (
+                    <Button
+                      key={mood.value}
+                      variant={isSelected ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => handleMoodSelect(mood.value)}
+                      className="flex flex-col gap-2 h-auto py-4"
+                    >
+                      <IconComponent size={20} />
+                      <span className="text-sm">{mood.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Seletor de Humor */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle className="text-xl text-center">Como você está hoje?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {moods.map((mood) => {
-                const IconComponent = mood.icon;
-                const isSelected = selectedMood === mood.id;
-                return (
-                  <Button
-                    key={mood.id}
-                    variant={isSelected ? "buddy" : "outline"}
-                    size="lg"
-                    onClick={() => handleMoodSelect(mood.id)}
-                    className="flex flex-col gap-2 h-auto py-6"
-                  >
-                    <IconComponent size={24} />
-                    <span className="text-sm">{mood.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Status */}
-        <Card className="bg-muted/50">
+        <Card className="shadow-soft">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
