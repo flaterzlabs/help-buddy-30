@@ -38,15 +38,15 @@ export type Database = {
             foreignKeyName: "connections_parent_educator_id_fkey"
             columns: ["parent_educator_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "connections_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -77,8 +77,8 @@ export type Database = {
             foreignKeyName: "help_requests_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -86,19 +86,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          mood: Database["public"]["Enums"]["mood_type"]
+          mood: string
           student_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          mood: Database["public"]["Enums"]["mood_type"]
+          mood: string
           student_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          mood?: Database["public"]["Enums"]["mood_type"]
+          mood?: string
           student_id?: string
         }
         Relationships: [
@@ -106,37 +106,104 @@ export type Database = {
             foreignKeyName: "mood_logs_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
-      profiles: {
+      push_subscriptions: {
         Row: {
-          connection_code: string | null
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          session_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          session_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          session_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["user_role"]
+          last_login: string | null
+          role: string
           updated_at: string
-          user_id: string
           username: string
         }
         Insert: {
-          connection_code?: string | null
+          avatar_url?: string | null
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["user_role"]
+          last_login?: string | null
+          role: string
           updated_at?: string
-          user_id: string
           username: string
         }
         Update: {
-          connection_code?: string | null
+          avatar_url?: string | null
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          last_login?: string | null
+          role?: string
           updated_at?: string
-          user_id?: string
           username?: string
         }
         Relationships: []
@@ -146,9 +213,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_connection_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      create_user_session: {
+        Args: { p_username: string }
+        Returns: {
+          session_token: string
+          user_data: Json
+        }[]
+      }
+      validate_session: {
+        Args: { p_session_token: string }
+        Returns: {
+          user_data: Json
+        }[]
       }
     }
     Enums: {

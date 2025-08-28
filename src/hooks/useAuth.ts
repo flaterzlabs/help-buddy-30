@@ -4,10 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface UserProfile {
   id: string;
-  user_id: string;
   username: string;
   role: 'student' | 'parent' | 'educator';
-  connection_code: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,15 +38,24 @@ export function useAuth() {
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
+        if (session?.user) {
+          // Use session user ID to fetch user data from our custom users table
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (userData) {
+            setProfile(userData);
+          }
+        } else {
+          setLoading(false);
+        }
     });
 
     return () => subscription.unsubscribe();
@@ -56,9 +64,9 @@ export function useAuth() {
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .single();
 
       if (error) {
