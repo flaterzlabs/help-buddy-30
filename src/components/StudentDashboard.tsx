@@ -6,7 +6,7 @@ import { HandHeart, Smile, Frown, Meh, Zap, LogOut, Copy, RefreshCw } from "luci
 import { toast } from "sonner";
 import { StudentAvatar } from "@/components/StudentAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomAuth } from "@/hooks/useCustomAuth";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 interface StudentDashboardProps {
@@ -27,8 +27,8 @@ const moods = [
 export function StudentDashboard({ username, onLogout }: StudentDashboardProps) {
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [avatarSeed, setAvatarSeed] = useState(username);
-  const { profile } = useAuth();
-  const { logMood, createHelpRequest, helpRequests } = useSupabaseData(profile?.id);
+  const { user } = useCustomAuth();
+  const { logMood, createHelpRequest, helpRequests } = useSupabaseData(user?.id);
 
   // Verificar se existe pedido de ajuda ativo
   const activeHelpRequest = helpRequests.find(req => req.is_active);
@@ -51,8 +51,8 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
   };
 
   const copyConnectionCode = () => {
-    if (profile?.connection_code) {
-      navigator.clipboard.writeText(profile.connection_code);
+    if (user?.connection_code) {
+      navigator.clipboard.writeText(user.connection_code);
       toast.success("Código copiado!", {
         description: "Compartilhe com seus pais ou professores",
         duration: 2000,
@@ -141,14 +141,14 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
             <CardContent className="text-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="text-3xl font-bold text-primary bg-primary/10 px-6 py-3 rounded-lg border-2 border-primary/20">
-                  {profile?.connection_code || "Carregando..."}
+                  {user?.connection_code || "Carregando..."}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={copyConnectionCode}
                   className="flex items-center gap-2"
-                  disabled={!profile?.connection_code}
+                  disabled={!user?.connection_code}
                 >
                   <Copy className="w-4 h-4" />
                   Copiar Código

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut, Users, Clock, AlertCircle, Plus, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useAuth } from '@/hooks/useAuth';
+import { useCustomAuth } from '@/hooks/useCustomAuth';
 import { useSupabaseData } from '@/hooks/useSupabaseData';
 import type { UserRole } from "./RoleSelector";
 
@@ -19,8 +19,8 @@ interface ParentEducatorDashboardProps {
 export function ParentEducatorDashboard({ username, role, onLogout }: ParentEducatorDashboardProps) {
   const [connectionCode, setConnectionCode] = useState('');
   const [showHistory, setShowHistory] = useState(false);
-  const { profile } = useAuth();
-  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(profile?.id);
+  const { user } = useCustomAuth();
+  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(user?.id);
 
   const handleConnectStudent = async () => {
     if (connectionCode.trim()) {

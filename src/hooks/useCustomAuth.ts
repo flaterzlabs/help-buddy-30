@@ -8,6 +8,7 @@ export interface User {
   avatar_url?: string;
   created_at: string;
   last_login?: string;
+  connection_code?: string;
 }
 
 interface AuthContextType {

@@ -1,11 +1,11 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomAuth } from "@/hooks/useCustomAuth";
 import { StudentDashboard } from "@/components/StudentDashboard";
 import { ParentEducatorDashboard } from "@/components/ParentEducatorDashboard";
 
 const Index = () => {
-  const { profile, signOut } = useAuth();
+  const { user, logout } = useCustomAuth();
 
-  if (!profile) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -17,20 +17,20 @@ const Index = () => {
   }
 
   // Mostrar dashboard baseado no role
-  if (profile.role === 'student') {
+  if (user.role === 'student') {
     return (
       <StudentDashboard
-        username={profile.username}
-        onLogout={signOut}
+        username={user.username}
+        onLogout={logout}
       />
     );
   }
 
   return (
     <ParentEducatorDashboard
-      username={profile.username}
-      role={profile.role}
-      onLogout={signOut}
+      username={user.username}
+      role={user.role}
+      onLogout={logout}
     />
   );
 };
