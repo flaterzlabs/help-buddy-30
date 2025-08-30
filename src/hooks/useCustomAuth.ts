@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext, createContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -43,11 +44,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error || !data || data.length === 0) {
+        console.log('Sessão inválida ou expirada, removendo token');
         localStorage.removeItem('session_token');
         setLoading(false);
         return;
       }
 
+      console.log('Sessão válida encontrada:', data[0].user_data);
       setUser(data[0].user_data as unknown as User);
     } catch (error) {
       console.error('Erro ao verificar sessão:', error);
@@ -59,34 +62,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (username: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Normalizar username para minúsculo
+      const normalizedUsername = username.trim().toLowerCase();
+      console.log('Tentando login com username:', normalizedUsername);
+
       const { data, error } = await supabase.rpc('create_user_session', { 
-        p_username: username 
+        p_username: normalizedUsername 
       });
 
       if (error) {
-        return { success: false, error: 'Usuário não encontrado' };
+        console.error('Erro no RPC create_user_session:', error);
+        if (error.message.includes('Usuário não encontrado')) {
+          return { success: false, error: 'Usuário não encontrado. Verifique o nome e tente novamente.' };
+        }
+        return { success: false, error: 'Erro no login: ' + error.message };
       }
 
       if (data && data.length > 0) {
         const { user_data, session_token } = data[0];
+        console.log('Login bem-sucedido:', user_data);
         localStorage.setItem('session_token', session_token);
         setUser(user_data as unknown as User);
         return { success: true };
       }
 
-      return { success: false, error: 'Erro no login' };
+      return { success: false, error: 'Erro inesperado no login' };
     } catch (error: any) {
+      console.error('Erro no login:', error);
       return { success: false, error: error.message || 'Erro no servidor' };
     }
   };
 
   const register = async (username: string, role: 'student' | 'parent' | 'educator', avatarUrl?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Verificar se username já existe
+      // Normalizar username para minúsculo
+      const normalizedUsername = username.trim().toLowerCase();
+      console.log('Tentando registrar usuário:', { username: normalizedUsername, role });
+
+      // Verificar se username já existe (busca case-insensitive)
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
-        .eq('username', username)
+        .eq('username', normalizedUsername)
         .maybeSingle();
 
       if (existingUser) {
@@ -97,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: newUser, error } = await supabase
         .from('users')
         .insert({
-          username,
+          username: normalizedUsername,
           role,
           avatar_url: avatarUrl
         })
@@ -105,12 +122,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) {
-        return { success: false, error: 'Erro ao criar usuário' };
+        console.error('Erro ao criar usuário:', error);
+        if (error.code === '23505') {
+          return { success: false, error: 'Nome de usuário já existe' };
+        }
+        return { success: false, error: 'Erro ao criar usuário: ' + error.message };
       }
 
+      console.log('Usuário criado com sucesso:', newUser);
+
       // Fazer login automaticamente
-      return await login(username);
+      return await login(normalizedUsername);
     } catch (error: any) {
+      console.error('Erro no registro:', error);
       return { success: false, error: error.message || 'Erro no servidor' };
     }
   };

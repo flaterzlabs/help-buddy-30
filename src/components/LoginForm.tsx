@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Users, AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface LoginFormProps {
@@ -12,11 +13,25 @@ interface LoginFormProps {
 
 export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
   const [username, setUsername] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username.trim()) {
-      onLogin(username.trim());
+      setError("");
+      setIsLoading(true);
+      
+      try {
+        // Normalizar username antes de enviar
+        const normalizedUsername = username.trim().toLowerCase();
+        await onLogin(normalizedUsername);
+      } catch (error) {
+        setError("Erro inesperado no login");
+        console.error('Erro no login:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -52,12 +67,22 @@ export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
               <div className="space-y-2">
                 <Input
                   type="text"
-                  placeholder="Seu nome"
+                  placeholder="Seu nome (ex: joão)"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(""); // Limpar erro ao digitar
+                  }}
                   className="h-14 text-lg focus-ring border-2"
                   required
+                  disabled={isLoading}
                 />
+                {error && (
+                  <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
               </div>
               
               <Button 
@@ -65,9 +90,9 @@ export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
                 variant="default"
                 size="lg"
                 className="w-full"
-                disabled={!username.trim()}
+                disabled={!username.trim() || isLoading}
               >
-                Entrar
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
@@ -79,6 +104,7 @@ export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
                 variant="outline"
                 onClick={onShowRoleSelector}
                 className="w-full"
+                disabled={isLoading}
               >
                 Criar conta
               </Button>
@@ -88,6 +114,9 @@ export function LoginForm({ onLogin, onShowRoleSelector }: LoginFormProps) {
 
         <div className="text-center text-primary-foreground/60 text-sm">
           <p>Feito com ❤️ para crianças especiais</p>
+          <p className="text-xs mt-1 opacity-75">
+            Dica: Use sempre letras minúsculas no nome
+          </p>
         </div>
       </div>
     </div>
