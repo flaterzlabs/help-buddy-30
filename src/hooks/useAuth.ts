@@ -9,6 +9,8 @@ export interface UserProfile {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  last_login: string | null;
+  connection_code?: string;
 }
 
 export function useAuth() {
@@ -51,7 +53,7 @@ export function useAuth() {
             .single();
 
           if (userData) {
-            setProfile(userData);
+            setProfile(userData as UserProfile);
           }
         } else {
           setLoading(false);
@@ -74,7 +76,7 @@ export function useAuth() {
         return;
       }
 
-      setProfile(data);
+      setProfile(data as UserProfile);
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
     }

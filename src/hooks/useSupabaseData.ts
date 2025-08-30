@@ -50,7 +50,7 @@ export function useSupabaseData(userId?: string) {
         .from('connections')
         .select(`
           *,
-          student_profile:profiles!connections_student_id_fkey(username, connection_code)
+          student_profile:users!connections_student_id_fkey(username, connection_code)
         `)
         .eq('parent_educator_id', userId);
 
@@ -104,8 +104,8 @@ export function useSupabaseData(userId?: string) {
       
       // Encontrar aluno pelo código
       const { data: studentData, error: studentError } = await supabase
-        .from('profiles')
-        .select('user_id')
+        .from('users')
+        .select('id')
         .eq('connection_code', connectionCode)
         .eq('role', 'student')
         .single();
@@ -122,7 +122,7 @@ export function useSupabaseData(userId?: string) {
         .from('connections')
         .insert({
           parent_educator_id: userId,
-          student_id: studentData.user_id
+          student_id: studentData.id
         });
 
       if (connectionError) {

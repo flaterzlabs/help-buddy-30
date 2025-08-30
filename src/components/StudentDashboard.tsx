@@ -28,7 +28,7 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [avatarSeed, setAvatarSeed] = useState(username);
   const { profile } = useAuth();
-  const { logMood, createHelpRequest, helpRequests } = useSupabaseData(profile?.user_id);
+  const { logMood, createHelpRequest, helpRequests } = useSupabaseData(profile?.id);
 
   // Verificar se existe pedido de ajuda ativo
   const activeHelpRequest = helpRequests.find(req => req.is_active);

@@ -20,7 +20,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
   const [connectionCode, setConnectionCode] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const { profile } = useAuth();
-  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(profile?.user_id);
+  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(profile?.id);
 
   const handleConnectStudent = async () => {
     if (connectionCode.trim()) {
