@@ -50,12 +50,12 @@ export function useSupabaseData(userId?: string) {
         .from('connections')
         .select(`
           *,
-          student_profile:users!connections_student_id_fkey(username, connection_code)
+          student_profile:users!student_id(username, connection_code)
         `)
         .eq('parent_educator_id', userId);
 
       if (error) throw error;
-      setConnections(data || []);
+      setConnections((data as any) || []);
     } catch (error: any) {
       console.error('Erro ao buscar conexões:', error);
     }
@@ -73,7 +73,7 @@ export function useSupabaseData(userId?: string) {
         .limit(10);
 
       if (error) throw error;
-      setMoodLogs(data || []);
+      setMoodLogs((data as any) || []);
     } catch (error: any) {
       console.error('Erro ao buscar logs de humor:', error);
     }
@@ -108,7 +108,7 @@ export function useSupabaseData(userId?: string) {
         .select('id')
         .eq('connection_code', connectionCode)
         .eq('role', 'student')
-        .single();
+        .maybeSingle();
 
       if (studentError || !studentData) {
         toast.error('Código inválido', {
@@ -179,7 +179,7 @@ export function useSupabaseData(userId?: string) {
         .select('id')
         .eq('student_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (existingRequest) {
         toast.info('Você já tem um pedido de ajuda ativo');

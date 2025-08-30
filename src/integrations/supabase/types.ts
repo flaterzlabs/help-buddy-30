@@ -181,6 +181,7 @@ export type Database = {
       users: {
         Row: {
           avatar_url: string | null
+          connection_code: string | null
           created_at: string
           id: string
           last_login: string | null
@@ -190,6 +191,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          connection_code?: string | null
           created_at?: string
           id?: string
           last_login?: string | null
@@ -199,6 +201,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          connection_code?: string | null
           created_at?: string
           id?: string
           last_login?: string | null
@@ -219,6 +222,10 @@ export type Database = {
           session_token: string
           user_data: Json
         }[]
+      }
+      generate_connection_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       validate_session: {
         Args: { p_session_token: string }
