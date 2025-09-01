@@ -185,6 +185,7 @@ export type Database = {
           created_at: string
           id: string
           last_login: string | null
+          password_hash: string | null
           role: string
           updated_at: string
           username: string
@@ -195,6 +196,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_login?: string | null
+          password_hash?: string | null
           role: string
           updated_at?: string
           username: string
@@ -205,6 +207,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_login?: string | null
+          password_hash?: string | null
           role?: string
           updated_at?: string
           username?: string
@@ -216,6 +219,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_user: {
+        Args: { p_password: string; p_username: string }
+        Returns: {
+          session_token: string
+          user_data: Json
+        }[]
+      }
       create_user_session: {
         Args: { p_username: string }
         Returns: {
@@ -226,6 +236,18 @@ export type Database = {
       generate_connection_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      register_user: {
+        Args: {
+          p_avatar_url: string
+          p_password: string
+          p_role: string
+          p_username: string
+        }
+        Returns: {
+          session_token: string
+          user_data: Json
+        }[]
       }
       validate_session: {
         Args: { p_session_token: string }

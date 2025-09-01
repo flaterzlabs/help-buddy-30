@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,19 @@ import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ThriveSprite } from "@/components/ThriveSprite";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
-import { User, LogIn, UserPlus, Heart } from "lucide-react";
+import { User, LogIn, UserPlus, Heart, Eye, EyeOff } from "lucide-react";
 
 type UserRole = 'student' | 'parent' | 'educator';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [loading, setLoading] = useState(false);
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login, register } = useCustomAuth();
   const navigate = useNavigate();
@@ -31,7 +34,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const result = await login(username);
+        const result = await login(username, password);
         
         if (result.success) {
           toast.success("Login realizado com sucesso! 🎉");
@@ -47,7 +50,7 @@ export default function Auth() {
           return;
         }
         
-        const result = await register(username, role, selectedAvatar);
+        const result = await register(username, role, password, selectedAvatar);
         
         if (result.success) {
           toast.success("Conta criada com sucesso! 🎉");
@@ -69,7 +72,7 @@ export default function Auth() {
     setShowAvatarSelection(false);
     // Continuar com o cadastro
     setTimeout(() => {
-      register(username, role, avatarUrl).then(result => {
+      register(username, role, password, avatarUrl).then(result => {
         if (result.success) {
           toast.success("Conta criada com sucesso! 🎉");
           navigate("/");
@@ -146,6 +149,28 @@ export default function Auth() {
                         required
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Sua senha"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -168,6 +193,28 @@ export default function Auth() {
                         placeholder="Escolha um nome único"
                         required
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Senha</Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Crie uma senha segura"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role">Você é:</Label>
@@ -212,7 +259,7 @@ export default function Auth() {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Sistema seguro - apenas nome de usuário necessário
+          Sistema seguro com autenticação por senha
         </p>
       </div>
     </div>

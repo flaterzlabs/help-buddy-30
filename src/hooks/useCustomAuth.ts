@@ -15,8 +15,8 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string) => Promise<{ success: boolean; error?: string }>;
-  register: (username: string, role: 'student' | 'parent' | 'educator', avatarUrl?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, role: 'student' | 'parent' | 'educator', password: string, avatarUrl?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateAvatar: (avatarUrl: string) => Promise<{ success: boolean; error?: string }>;
 }
@@ -60,20 +60,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const login = async (username: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Normalizar username para minúsculo
       const normalizedUsername = username.trim().toLowerCase();
       console.log('Tentando login com username:', normalizedUsername);
 
-      const { data, error } = await supabase.rpc('create_user_session', { 
-        p_username: normalizedUsername 
+      const { data, error } = await supabase.rpc('authenticate_user', { 
+        p_username: normalizedUsername,
+        p_password: password
       });
 
       if (error) {
-        console.error('Erro no RPC create_user_session:', error);
+        console.error('Erro no RPC authenticate_user:', error);
         if (error.message.includes('Usuário não encontrado')) {
           return { success: false, error: 'Usuário não encontrado. Verifique o nome e tente novamente.' };
+        }
+        if (error.message.includes('Credenciais inválidas')) {
+          return { success: false, error: 'Senha incorreta. Tente novamente.' };
+        }
+        if (error.message.includes('não possui senha definida')) {
+          return { success: false, error: 'Este usuário não possui senha definida. Entre em contato com o administrador.' };
         }
         return { success: false, error: 'Erro no login: ' + error.message };
       }
@@ -93,46 +99,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (username: string, role: 'student' | 'parent' | 'educator', avatarUrl?: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (username: string, role: 'student' | 'parent' | 'educator', password: string, avatarUrl?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Normalizar username para minúsculo
       const normalizedUsername = username.trim().toLowerCase();
       console.log('Tentando registrar usuário:', { username: normalizedUsername, role });
 
-      // Verificar se username já existe (busca case-insensitive)
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', normalizedUsername)
-        .maybeSingle();
-
-      if (existingUser) {
-        return { success: false, error: 'Nome de usuário já existe' };
-      }
-
-      // Criar novo usuário
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert({
-          username: normalizedUsername,
-          role,
-          avatar_url: avatarUrl
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('register_user', {
+        p_username: normalizedUsername,
+        p_role: role,
+        p_avatar_url: avatarUrl || null,
+        p_password: password
+      });
 
       if (error) {
-        console.error('Erro ao criar usuário:', error);
-        if (error.code === '23505') {
+        console.error('Erro no RPC register_user:', error);
+        if (error.message.includes('Nome de usuário já existe')) {
           return { success: false, error: 'Nome de usuário já existe' };
+        }
+        if (error.message.includes('Username é obrigatório')) {
+          return { success: false, error: 'Nome de usuário é obrigatório' };
+        }
+        if (error.message.includes('Senha é obrigatória')) {
+          return { success: false, error: 'Senha é obrigatória' };
         }
         return { success: false, error: 'Erro ao criar usuário: ' + error.message };
       }
 
-      console.log('Usuário criado com sucesso:', newUser);
+      if (data && data.length > 0) {
+        const { user_data, session_token } = data[0];
+        console.log('Usuário criado com sucesso:', user_data);
+        localStorage.setItem('session_token', session_token);
+        setUser(user_data as unknown as User);
+        return { success: true };
+      }
 
-      // Fazer login automaticamente
-      return await login(normalizedUsername);
+      return { success: false, error: 'Erro inesperado no registro' };
     } catch (error: any) {
       console.error('Erro no registro:', error);
       return { success: false, error: error.message || 'Erro no servidor' };
