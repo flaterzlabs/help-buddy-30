@@ -19,7 +19,7 @@ export function ThriveSprite({ onAvatarSelect, initialAvatar }: ThriveSpriteProp
   const avatarStyles = [
     'fun-emoji',
     'adventurer',
-    'big-smile', 
+    'big-smile',
     'bottts',
     'croodles-neutral'
   ];
@@ -31,12 +31,12 @@ export function ThriveSprite({ onAvatarSelect, initialAvatar }: ThriveSpriteProp
       return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}&size=120&backgroundColor=transparent`;
     });
     setAvatarOptions(newOptions);
-    
+
     // Selecionar o primeiro automaticamente se não houver seleção
     if (!selectedOption && newOptions.length > 0) {
       setSelectedOption(newOptions[0]);
     }
-    
+
     setIsGenerating(false);
   };
 
@@ -77,15 +77,15 @@ export function ThriveSprite({ onAvatarSelect, initialAvatar }: ThriveSpriteProp
           Seu amigo virtual que te acompanha na jornada!
         </p>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Avatar selecionado atual */}
         {currentAvatar && (
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-3">Seu ThriveSprite atual:</p>
             <div className="inline-block p-4 bg-gradient-primary rounded-full">
-              <img 
-                src={currentAvatar} 
+              <img
+                src={currentAvatar}
                 alt="ThriveSprite atual"
                 className="w-24 h-24 rounded-full"
               />
@@ -113,18 +113,17 @@ export function ThriveSprite({ onAvatarSelect, initialAvatar }: ThriveSpriteProp
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {avatarOptions.map((avatarUrl, index) => (
-                  <div 
+                  <div
                     key={index}
-                    className={`relative cursor-pointer transition-all duration-200 hover:scale-105 ${
-                      selectedOption === avatarUrl 
-                        ? 'ring-4 ring-primary ring-offset-2 rounded-full' 
+                    className={`relative cursor-pointer transition-all duration-200 hover:scale-105 ${selectedOption === avatarUrl
+                        ? 'ring-4 ring-primary ring-offset-2 rounded-full'
                         : ''
-                    }`}
+                      }`}
                     onClick={() => handleSelectAvatar(avatarUrl)}
                   >
                     <div className="p-3 bg-gradient-secondary rounded-full">
-                      <img 
-                        src={avatarUrl} 
+                      <img
+                        src={avatarUrl}
                         alt={`ThriveSprite opção ${index + 1}`}
                         className="w-20 h-20 rounded-full"
                       />

@@ -40,10 +40,10 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
   const handleMoodSelect = async (mood: MoodType) => {
     setSelectedMood(mood);
     const moodName = moods.find(m => m.value === mood)?.label || mood;
-    
+
     // Registrar no banco de dados
     await logMood(mood);
-    
+
     toast.success("Humor registrado! 😊", {
       description: `Você está se sentindo ${moodName.toLowerCase()}`,
       duration: 3000,
@@ -80,8 +80,8 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
           </div>
           <div className="flex gap-2">
             <ThemeToggle />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={onLogout}
               className="transition-gentle focus-ring"
             >
@@ -112,7 +112,7 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 <div className="space-y-2">
                   {selectedMood ? (
                     <p className="text-sm text-muted-foreground">
@@ -175,7 +175,7 @@ export function StudentDashboard({ username, onLogout }: StudentDashboardProps) 
                 <HandHeart className="w-8 h-8 mr-3" />
                 {activeHelpRequest ? "Ajuda enviada!" : "PEDIR AJUDA"}
               </Button>
-              
+
               {activeHelpRequest && (
                 <div className="mt-4 text-center">
                   <p className="text-success font-semibold">✓ Pedido enviado!</p>

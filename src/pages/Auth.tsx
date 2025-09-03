@@ -24,7 +24,7 @@ export default function Auth() {
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const { login, register } = useCustomAuth();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ export default function Auth() {
     try {
       if (isLogin) {
         const result = await login(username, password);
-        
+
         if (result.success) {
           toast.success("Login realizado com sucesso! 🎉");
           navigate("/");
@@ -49,9 +49,9 @@ export default function Auth() {
           setLoading(false);
           return;
         }
-        
+
         const result = await register(username, role, password, selectedAvatar);
-        
+
         if (result.success) {
           toast.success("Conta criada com sucesso! 🎉");
           navigate("/");
@@ -118,16 +118,16 @@ export default function Auth() {
             <CardContent>
               <Tabs value={isLogin ? "login" : "signup"} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger 
-                    value="login" 
+                  <TabsTrigger
+                    value="login"
                     onClick={() => setIsLogin(true)}
                     className="flex items-center gap-2"
                   >
                     <LogIn className="w-4 h-4" />
                     Login
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="signup" 
+                  <TabsTrigger
+                    value="signup"
                     onClick={() => setIsLogin(false)}
                     className="flex items-center gap-2"
                   >
@@ -171,9 +171,9 @@ export default function Auth() {
                         </Button>
                       </div>
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
+                    <Button
+                      type="submit"
+                      className="w-full"
                       disabled={loading}
                     >
                       {loading ? "Entrando..." : "Entrar"}
@@ -244,9 +244,9 @@ export default function Auth() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
+                    <Button
+                      type="submit"
+                      className="w-full"
                       disabled={loading}
                     >
                       {loading ? "Criando conta..." : (role === 'student' ? "Escolher ThriveSprite" : "Criar conta")}
