@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Help Buddy App Design System - Acessível e Inclusivo para Crianças Autistas */
+
+@layer base {
+  :root {
+    /* Base colors - suaves e acolhedoras */
+    --background: 196 100% 97%;
+    --foreground: 215 25% 27%;
+
+    /* Card colors */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* Primary - azul suave e acolhedor */
+    --primary: 211 100% 85%;
+    --primary-foreground: 215 45% 15%;
+    --primary-hover: 211 85% 80%;
+
+    /* Secondary - verde mint suave */
+    --secondary: 158 60% 85%;
+    --secondary-foreground: 158 45% 15%;
+    --secondary-hover: 158 50% 80%;
+
+    /* Success - verde suave */
+    --success: 142 70% 85%;
+    --success-foreground: 142 45% 15%;
+
+    /* Warning - amarelo suave */
+    --warning: 48 95% 85%;
+    --warning-foreground: 48 45% 15%;
+
+    /* Muted colors */
+    --muted: 210 40% 94%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent - lavanda suave */
+    --accent: 270 60% 90%;
+    --accent-foreground: 270 45% 15%;
+
+    /* Destructive - vermelho muito suave */
+    --destructive: 0 70% 85%;
+    --destructive-foreground: 0 45% 15%;
+
+    /* Border and input */
+    --border: 211 35% 88%;
+    --input: 211 35% 92%;
+    --ring: 211 100% 75%;
+
+    /* Buddy colors */
+    --buddy-happy: 45 100% 80%;
+    --buddy-calm: 158 60% 80%;
+    --buddy-excited: 270 70% 85%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 100% 95%), hsl(211 85% 85%));
+    --gradient-secondary: linear-gradient(135deg, hsl(158 70% 95%), hsl(158 50% 85%));
+    --gradient-accent: linear-gradient(135deg, hsl(270 70% 95%), hsl(270 50% 85%));
+    --gradient-warm: linear-gradient(135deg, hsl(45 100% 92%), hsl(35 85% 85%));
+
+    /* Shadows - muito suaves */
+    --shadow-soft: 0 2px 8px hsl(211 100% 85% / 0.15);
+    --shadow-medium: 0 4px 16px hsl(211 85% 75% / 0.2);
+    --shadow-large: 0 8px 32px hsl(211 70% 65% / 0.25);
+
+    /* Animations */
+    --transition-gentle: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Border radius - mais arredondado para ser mais amigável */
+    --radius: 1rem;
+    --radius-large: 1.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Suavidade para reduzir estímulos visuais excessivos */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* Gradientes personalizados */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
+  }
+
+  /* Sombras suaves */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+
+  /* Transições suaves */
+  .transition-gentle {
+    transition: var(--transition-gentle);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Animações delicadas para elementos interativos */
+  .animate-gentle-pulse {
+    animation: gentle-pulse 3s ease-in-out infinite;
+  }
+  
+  .animate-soft-bounce {
+    animation: soft-bounce 2s ease-in-out infinite;
+  }
+
+  /* Estados de foco acessíveis */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-4 focus:ring-ring/30 transition-gentle;
+  }
+
+  /* Cores dos Buddys */
+  .buddy-happy {
+    background-color: hsl(var(--buddy-happy));
+  }
+  
+  .buddy-calm {
+    background-color: hsl(var(--buddy-calm));
+  }
+  
+  .buddy-excited {
+    background-color: hsl(var(--buddy-excited));
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes soft-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
