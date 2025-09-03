@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function Auth() {
           toast.error(result.error || "Erro no login");
         }
       } else {
+        // Para cadastro, mostrar seleção de avatar primeiro se for estudante
         if (role === 'student' && !selectedAvatar) {
           setShowAvatarSelection(true);
           setLoading(false);
@@ -68,6 +70,7 @@ export default function Auth() {
   const handleAvatarSelect = (avatarUrl: string) => {
     setSelectedAvatar(avatarUrl);
     setShowAvatarSelection(false);
+    // Continuar com o cadastro
     setTimeout(() => {
       register(username, role, password, avatarUrl).then(result => {
         if (result.success) {
@@ -81,26 +84,23 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-
-      {/* Botão de tema no canto superior direito */}
-      <div className="absolute top-8 right-8 z-10">
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-lg space-y-6">
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <Heart className="w-8 h-8 text-primary" />
+            </div>
           </div>
-
-          <div className="flex-col items-center gap-4">
-            {/* Adicionado 'mb-2' para espaçamento entre o título e o parágrafo */}
-            <h1 className="text-6xl font-bold text-foreground mb-4">Help Buddy</h1>
-            <p className="text-2xl text-muted-foreground">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Help Buddy</h1>
+            <p className="text-muted-foreground">
               Conectando alunos, pais e educadores
             </p>
+          </div>
+          <div className="flex justify-center">
+            <ThemeToggle />
           </div>
         </div>
 
@@ -111,24 +111,20 @@ export default function Auth() {
           /* Auth Form */
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="text-center text-3xl">
+              <CardTitle className="text-center">
                 {isLogin ? "Fazer Login" : "Criar Conta"}
               </CardTitle>
             </CardHeader>
-
             <CardContent>
-
               <Tabs value={isLogin ? "login" : "signup"} className="w-full">
-                <TabsList className="grid h-auto w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger
                     value="login"
                     onClick={() => setIsLogin(true)}
                     className="flex items-center gap-2"
                   >
                     <LogIn className="w-4 h-4" />
-
-                    <p className="text-xl">Login</p>
-
+                    Login
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
@@ -136,27 +132,25 @@ export default function Auth() {
                     className="flex items-center gap-2"
                   >
                     <UserPlus className="w-4 h-4" />
-                    <p className="text-xl">Cadastro</p>
-
+                    Cadastro
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login" className="space-y-4 mt-6">
-                  <form onSubmit={handleAuth} className="space-y-6">
+                  <form onSubmit={handleAuth} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username" className="text-xl">Nome de usuário</Label>
+                      <Label htmlFor="username">Nome de usuário</Label>
                       <Input
                         id="username"
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="Seu nome de usuário"
-                        className="placeholder:text-base"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-xl">Senha</Label>
+                      <Label htmlFor="password">Senha</Label>
                       <div className="relative">
                         <Input
                           id="password"
@@ -164,7 +158,6 @@ export default function Auth() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Sua senha"
-                          className="placeholder:text-base"
                           required
                         />
                         <Button
@@ -180,7 +173,7 @@ export default function Auth() {
                     </div>
                     <Button
                       type="submit"
-                      className="w-full text-xl"
+                      className="w-full"
                       disabled={loading}
                     >
                       {loading ? "Entrando..." : "Entrar"}
