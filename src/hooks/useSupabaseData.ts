@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { rpcCall } from '@/lib/supabase-extensions';
 
 export interface Connection {
   id: string;
@@ -46,16 +47,29 @@ export function useSupabaseData(userId?: string) {
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          *,
-          student_profile:users!student_id(username, connection_code)
-        `)
-        .eq('parent_educator_id', userId);
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        console.error('No session token found');
+        return;
+      }
+
+      const { data, error } = await rpcCall.getConnections(sessionToken);
 
       if (error) throw error;
-      setConnections((data as any) || []);
+      
+      // Transform data to match expected format
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        parent_educator_id: item.parent_educator_id,
+        student_id: item.student_id,
+        created_at: item.created_at,
+        student_profile: {
+          username: item.student_username,
+          connection_code: item.student_connection_code
+        }
+      }));
+      
+      setConnections(transformedData);
     } catch (error: any) {
       console.error('Erro ao buscar conexões:', error);
     }
@@ -65,15 +79,16 @@ export function useSupabaseData(userId?: string) {
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('mood_logs')
-        .select('*')
-        .or(`student_id.eq.${userId},student_id.in.(${connections.map(c => c.student_id).join(',')})`)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        console.error('No session token found');
+        return;
+      }
+
+      const { data, error } = await rpcCall.getMoodLogs(sessionToken);
 
       if (error) throw error;
-      setMoodLogs((data as any) || []);
+      setMoodLogs(data || []);
     } catch (error: any) {
       console.error('Erro ao buscar logs de humor:', error);
     }
@@ -83,11 +98,13 @@ export function useSupabaseData(userId?: string) {
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .select('*')
-        .or(`student_id.eq.${userId},student_id.in.(${connections.map(c => c.student_id).join(',')})`)
-        .order('created_at', { ascending: false });
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        console.error('No session token found');
+        return;
+      }
+
+      const { data, error } = await rpcCall.getHelpRequests(sessionToken);
 
       if (error) throw error;
       setHelpRequests(data || []);
@@ -102,36 +119,27 @@ export function useSupabaseData(userId?: string) {
     try {
       setLoading(true);
       
-      // Encontrar aluno pelo código
-      const { data: studentData, error: studentError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('connection_code', connectionCode)
-        .eq('role', 'student')
-        .maybeSingle();
-
-      if (studentError || !studentData) {
-        toast.error('Código inválido', {
-          description: 'Não foi possível encontrar um aluno com este código'
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        toast.error('Sessão expirada', {
+          description: 'Faça login novamente'
         });
         return false;
       }
 
-      // Criar conexão
-      const { error: connectionError } = await supabase
-        .from('connections')
-        .insert({
-          parent_educator_id: userId,
-          student_id: studentData.id
-        });
+      const { data, error } = await rpcCall.connectToStudent(sessionToken, connectionCode.trim());
 
-      if (connectionError) {
-        if (connectionError.code === '23505') {
+      if (error) {
+        if (error.message.includes('Student not found')) {
+          toast.error('Código inválido', {
+            description: 'Não foi possível encontrar um aluno com este código'
+          });
+        } else if (error.message.includes('Connection already exists')) {
           toast.error('Já conectado', {
             description: 'Você já está conectado com este aluno'
           });
         } else {
-          throw connectionError;
+          throw error;
         }
         return false;
       }
@@ -154,12 +162,15 @@ export function useSupabaseData(userId?: string) {
     if (!userId) return;
     
     try {
-      const { error } = await supabase
-        .from('mood_logs')
-        .insert({
-          student_id: userId,
-          mood
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        toast.error('Sessão expirada', {
+          description: 'Faça login novamente'
         });
+        return;
+      }
+
+      const { error } = await rpcCall.logMood(sessionToken, mood);
 
       if (error) throw error;
       await fetchMoodLogs();
@@ -173,27 +184,24 @@ export function useSupabaseData(userId?: string) {
     if (!userId) return;
     
     try {
-      // Verificar se já existe um pedido ativo
-      const { data: existingRequest } = await supabase
-        .from('help_requests')
-        .select('id')
-        .eq('student_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (existingRequest) {
-        toast.info('Você já tem um pedido de ajuda ativo');
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        toast.error('Sessão expirada', {
+          description: 'Faça login novamente'
+        });
         return;
       }
 
-      const { error } = await supabase
-        .from('help_requests')
-        .insert({
-          student_id: userId,
-          is_active: true
-        });
+      const { error } = await rpcCall.createHelpRequest(sessionToken);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('already has an active help request')) {
+          toast.info('Você já tem um pedido de ajuda ativo');
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       await fetchHelpRequests();
       toast.success('Pedido de ajuda enviado! 🚨', {
