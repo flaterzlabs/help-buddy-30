@@ -53,7 +53,25 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      const { data, error } = await rpcCall.getConnections(sessionToken);
+      // Try RPC function first, fallback to direct query
+      let data, error;
+      try {
+        const rpcResult = await rpcCall.getConnections(sessionToken);
+        data = rpcResult.data;
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct query:', rpcError.message);
+        // Fallback to direct query
+        const directResult = await supabase
+          .from('connections')
+          .select(`
+            *,
+            student_profile:users!student_id(username, connection_code)
+          `)
+          .eq('parent_educator_id', userId);
+        data = directResult.data;
+        error = directResult.error;
+      }
 
       if (error) throw error;
       
@@ -63,7 +81,7 @@ export function useSupabaseData(userId?: string) {
         parent_educator_id: item.parent_educator_id,
         student_id: item.student_id,
         created_at: item.created_at,
-        student_profile: {
+        student_profile: item.student_profile || {
           username: item.student_username,
           connection_code: item.student_connection_code
         }
@@ -85,7 +103,24 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      const { data, error } = await rpcCall.getMoodLogs(sessionToken);
+      // Try RPC function first, fallback to direct query
+      let data, error;
+      try {
+        const rpcResult = await rpcCall.getMoodLogs(sessionToken);
+        data = rpcResult.data;
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct query:', rpcError.message);
+        // Fallback to direct query
+        const directResult = await supabase
+          .from('mood_logs')
+          .select('*')
+          .or(`student_id.eq.${userId},student_id.in.(${connections.map(c => c.student_id).join(',') || userId})`)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        data = directResult.data;
+        error = directResult.error;
+      }
 
       if (error) throw error;
       setMoodLogs(data || []);
@@ -104,7 +139,23 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      const { data, error } = await rpcCall.getHelpRequests(sessionToken);
+      // Try RPC function first, fallback to direct query
+      let data, error;
+      try {
+        const rpcResult = await rpcCall.getHelpRequests(sessionToken);
+        data = rpcResult.data;
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct query:', rpcError.message);
+        // Fallback to direct query
+        const directResult = await supabase
+          .from('help_requests')
+          .select('*')
+          .or(`student_id.eq.${userId},student_id.in.(${connections.map(c => c.student_id).join(',') || userId})`)
+          .order('created_at', { ascending: false });
+        data = directResult.data;
+        error = directResult.error;
+      }
 
       if (error) throw error;
       setHelpRequests(data || []);
@@ -127,14 +178,48 @@ export function useSupabaseData(userId?: string) {
         return false;
       }
 
-      const { data, error } = await rpcCall.connectToStudent(sessionToken, connectionCode.trim());
+      // Try RPC function first, fallback to direct operations
+      let data, error;
+      try {
+        const rpcResult = await rpcCall.connectToStudent(sessionToken, connectionCode.trim());
+        data = rpcResult.data;
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct operations:', rpcError.message);
+        
+        // Fallback to direct operations
+        // First find the student
+        const { data: studentData, error: studentError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('connection_code', connectionCode.trim())
+          .eq('role', 'student')
+          .maybeSingle();
 
-      if (error) {
-        if (error.message.includes('Student not found')) {
+        if (studentError || !studentData) {
           toast.error('Código inválido', {
             description: 'Não foi possível encontrar um aluno com este código'
           });
-        } else if (error.message.includes('Connection already exists')) {
+          return false;
+        }
+
+        // Then create the connection
+        const { error: connectionError } = await supabase
+          .from('connections')
+          .insert({
+            parent_educator_id: userId,
+            student_id: studentData.id
+          });
+
+        error = connectionError;
+      }
+
+      if (error) {
+        if (error.message.includes('Student not found') || error.message.includes('Código inválido')) {
+          toast.error('Código inválido', {
+            description: 'Não foi possível encontrar um aluno com este código'
+          });
+        } else if (error.message.includes('Connection already exists') || error.code === '23505') {
           toast.error('Já conectado', {
             description: 'Você já está conectado com este aluno'
           });
@@ -170,7 +255,24 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      const { error } = await rpcCall.logMood(sessionToken, mood);
+      // Try RPC function first, fallback to direct operations
+      let error;
+      try {
+        const rpcResult = await rpcCall.logMood(sessionToken, mood);
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct operations:', rpcError.message);
+        
+        // Fallback to direct operations
+        const { error: insertError } = await supabase
+          .from('mood_logs')
+          .insert({
+            student_id: userId,
+            mood
+          });
+        
+        error = insertError;
+      }
 
       if (error) throw error;
       await fetchMoodLogs();
@@ -192,7 +294,38 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      const { error } = await rpcCall.createHelpRequest(sessionToken);
+      // Try RPC function first, fallback to direct operations
+      let error;
+      try {
+        const rpcResult = await rpcCall.createHelpRequest(sessionToken);
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct operations:', rpcError.message);
+        
+        // Fallback to direct operations
+        // First check for existing active request
+        const { data: existingRequest } = await supabase
+          .from('help_requests')
+          .select('id')
+          .eq('student_id', userId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (existingRequest) {
+          toast.info('Você já tem um pedido de ajuda ativo');
+          return;
+        }
+
+        // Create the help request
+        const { error: insertError } = await supabase
+          .from('help_requests')
+          .insert({
+            student_id: userId,
+            is_active: true
+          });
+        
+        error = insertError;
+      }
 
       if (error) {
         if (error.message.includes('already has an active help request')) {
