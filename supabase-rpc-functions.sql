@@ -91,10 +91,10 @@ BEGIN
     RAISE EXCEPTION 'Invalid or expired session token';
   END IF;
   
-  -- Find student by connection code
+  -- Find student by connection code (using $2 to avoid ambiguity)
   SELECT u.id INTO target_student_id
   FROM users u
-  WHERE u.connection_code = connection_code
+  WHERE u.connection_code = $2
     AND u.role = 'student';
     
   IF target_student_id IS NULL THEN
@@ -122,11 +122,12 @@ BEGIN
     RETURNING connections.id, connections.parent_educator_id, connections.student_id, connections.created_at
   ),
   student_info AS (
-    SELECT u.username, u.connection_code
+    SELECT u.username AS student_username, u.connection_code AS student_connection_code
     FROM users u
     WHERE u.id = target_student_id
   )
-  SELECT nc.id, nc.parent_educator_id, nc.student_id, nc.created_at, si.username, si.connection_code
+  SELECT nc.id, nc.parent_educator_id, nc.student_id, nc.created_at, 
+         si.student_username, si.student_connection_code
   FROM new_connection nc
   CROSS JOIN student_info si;
 END;
