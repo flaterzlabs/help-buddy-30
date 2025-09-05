@@ -94,7 +94,7 @@ BEGIN
   -- Find student by connection code
   SELECT u.id INTO target_student_id
   FROM users u
-  WHERE u.connection_code = $2
+  WHERE u.connection_code = connection_code
     AND u.role = 'student';
     
   IF target_student_id IS NULL THEN
@@ -114,16 +114,19 @@ BEGIN
   -- Set user context for RLS
   PERFORM set_config('app.current_user_id', current_user_id::TEXT, true);
   
-  -- Create connection
-  RETURN QUERY
-  INSERT INTO connections (parent_educator_id, student_id)
-  VALUES (current_user_id, target_student_id)
-  RETURNING connections.id, connections.parent_educator_id, connections.student_id, 
-            connections.created_at,
-            (SELECT username FROM users WHERE id = target_student_id),
-            (SELECT users.connection_code FROM users WHERE id = target_student_id);
-END;
-$$;
+  -- Create connection using CTE to avoid ambiguous column references
+  WITH new_connection AS (
+    INSERT INTO connections (parent_educator_id, student_id)
+    VALUES (current_user_id, target_student_id)
+    RETURNING connections.id, connections.parent_educator_id, connections.student_id, connections.created_at
+  ),
+  student_info AS (
+    SELECT u.username, u.connection_code
+    FROM users u
+    WHERE u.id = target_student_id
+  )
+  SELECT nc.id, nc.parent_educator_id, nc.student_id, nc.created_at, si.username, si.connection_code
+  FROM new_connection nc, student_info si;
 
 -- Function to get connections for current user
 CREATE OR REPLACE FUNCTION get_connections_rpc(session_token TEXT)
