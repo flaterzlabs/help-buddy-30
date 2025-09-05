@@ -127,7 +127,8 @@ BEGIN
     WHERE u.id = target_student_id
   )
   SELECT nc.id, nc.parent_educator_id, nc.student_id, nc.created_at, si.username, si.connection_code
-  FROM new_connection nc, student_info si;
+  FROM new_connection nc
+  CROSS JOIN student_info si;
 END;
 $$;
 
