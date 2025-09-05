@@ -115,6 +115,7 @@ BEGIN
   PERFORM set_config('app.current_user_id', current_user_id::TEXT, true);
   
   -- Create connection using CTE to avoid ambiguous column references
+  RETURN QUERY
   WITH new_connection AS (
     INSERT INTO connections (parent_educator_id, student_id)
     VALUES (current_user_id, target_student_id)
@@ -127,6 +128,8 @@ BEGIN
   )
   SELECT nc.id, nc.parent_educator_id, nc.student_id, nc.created_at, si.username, si.connection_code
   FROM new_connection nc, student_info si;
+END;
+$$;
 
 -- Function to get connections for current user
 CREATE OR REPLACE FUNCTION get_connections_rpc(session_token TEXT)
