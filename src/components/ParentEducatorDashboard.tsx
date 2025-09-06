@@ -20,7 +20,7 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
   const [connectionCode, setConnectionCode] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const { user } = useCustomAuth();
-  const { connections, helpRequests, moodLogs, connectToStudent, loading } = useSupabaseData(user?.id);
+  const { connections, helpRequests, moodLogs, connectToStudent, loading, resolveHelpRequest } = useSupabaseData(user?.id);
 
   const handleConnectStudent = async () => {
     if (connectionCode.trim()) {
@@ -262,9 +262,24 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <Badge variant={hasActiveHelp ? 'destructive' : 'secondary'}>
-                        {hasActiveHelp ? 'Precisa de Ajuda' : 'OK'}
-                      </Badge>
+                      {hasActiveHelp ? (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            const activeRequest = activeHelpRequests.find(req => req.student_id === connection.student_id);
+                            if (activeRequest) {
+                              resolveHelpRequest(activeRequest.id);
+                            }
+                          }}
+                        >
+                          Precisa de Ajuda - Clique para Resolver
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary">
+                          OK
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 );

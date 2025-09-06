@@ -52,5 +52,11 @@ export const rpcCall = {
     supabase.rpc('log_mood_rpc' as any, { 
       session_token: sessionToken, 
       mood_value: moodValue 
+    }),
+    
+  resolveHelpRequest: (sessionToken: string, helpRequestId: string) =>
+    supabase.rpc('resolve_help_request_rpc' as any, {
+      session_token: sessionToken,
+      help_request_id: helpRequestId
     })
 };

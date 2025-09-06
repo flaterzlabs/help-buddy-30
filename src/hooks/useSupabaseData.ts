@@ -40,6 +40,23 @@ export function useSupabaseData(userId?: string) {
       fetchConnections();
       fetchMoodLogs();
       fetchHelpRequests();
+      
+      // Setup real-time subscription for help requests
+      const channel = supabase
+        .channel('help_requests_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'help_requests' },
+          (payload) => {
+            console.log('Help request change:', payload);
+            fetchHelpRequests();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userId]);
 
@@ -346,6 +363,51 @@ export function useSupabaseData(userId?: string) {
     }
   };
 
+  const resolveHelpRequest = async (helpRequestId: string) => {
+    if (!userId) return;
+    
+    try {
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        toast.error('Sessão expirada', {
+          description: 'Faça login novamente'
+        });
+        return;
+      }
+
+      // Try RPC function first, fallback to direct operations
+      let error;
+      try {
+        const rpcResult = await rpcCall.resolveHelpRequest(sessionToken, helpRequestId);
+        error = rpcResult.error;
+      } catch (rpcError: any) {
+        console.warn('RPC not available, using direct operations:', rpcError.message);
+        
+        // Fallback to direct operations
+        const { error: updateError } = await supabase
+          .from('help_requests')
+          .update({
+            is_active: false,
+            resolved_at: new Date().toISOString()
+          })
+          .eq('id', helpRequestId)
+          .eq('is_active', true);
+        
+        error = updateError;
+      }
+
+      if (error) throw error;
+      
+      await fetchHelpRequests();
+      toast.success('Pedido de ajuda resolvido! ✅', {
+        description: 'O aluno poderá enviar novos pedidos de ajuda'
+      });
+    } catch (error: any) {
+      console.error('Erro ao resolver pedido de ajuda:', error);
+      toast.error('Erro ao resolver pedido de ajuda');
+    }
+  };
+
   return {
     connections,
     moodLogs,
@@ -354,6 +416,7 @@ export function useSupabaseData(userId?: string) {
     connectToStudent,
     logMood,
     createHelpRequest,
+    resolveHelpRequest,
     refetch: () => {
       fetchConnections();
       fetchMoodLogs();
