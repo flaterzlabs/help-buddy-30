@@ -39,7 +39,6 @@ export function useSupabaseData(userId?: string) {
     if (userId) {
       fetchConnections();
       fetchMoodLogs();
-      fetchHelpRequests();
       
       // Setup real-time subscription for help requests
       const channel = supabase
@@ -59,6 +58,13 @@ export function useSupabaseData(userId?: string) {
       };
     }
   }, [userId]);
+
+  // Separate useEffect to fetch help requests after connections are loaded
+  useEffect(() => {
+    if (userId && connections.length >= 0) {
+      fetchHelpRequests();
+    }
+  }, [userId, connections]);
 
   const fetchConnections = async () => {
     if (!userId) return;
@@ -156,23 +162,36 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      // Try RPC function first, fallback to direct query
+      console.log('Fetchando help requests para userId:', userId);
+      console.log('Conexões disponíveis:', connections.map(c => c.student_id));
+
+      // Use direct query to get help requests for connected students
+      const studentIds = connections.map(c => c.student_id);
+      
       let data, error;
-      try {
-        const rpcResult = await rpcCall.getHelpRequests(sessionToken);
-        data = rpcResult.data;
-        error = rpcResult.error;
-      } catch (rpcError: any) {
-        console.warn('RPC not available, using direct query:', rpcError.message);
-        // Fallback to direct query
-        const directResult = await supabase
+      if (studentIds.length > 0) {
+        const { data: helpRequestsData, error: helpRequestsError } = await supabase
           .from('help_requests')
           .select('*')
-          .or(`student_id.eq.${userId},student_id.in.(${connections.map(c => c.student_id).join(',') || userId})`)
+          .in('student_id', studentIds)
           .order('created_at', { ascending: false });
-        data = directResult.data;
-        error = directResult.error;
+        
+        data = helpRequestsData;
+        error = helpRequestsError;
+      } else {
+        // If no connections, check if user is a student
+        const { data: helpRequestsData, error: helpRequestsError } = await supabase
+          .from('help_requests')
+          .select('*')
+          .eq('student_id', userId)
+          .order('created_at', { ascending: false });
+        
+        data = helpRequestsData;
+        error = helpRequestsError;
       }
+
+      console.log('Help requests encontrados:', data);
+      console.log('Erro na consulta:', error);
 
       if (error) throw error;
       setHelpRequests(data || []);
@@ -364,8 +383,14 @@ export function useSupabaseData(userId?: string) {
   };
 
   const resolveHelpRequest = async (helpRequestId: string) => {
+    console.log('=== INICIANDO RESOLVE HELP REQUEST ===');
+    console.log('helpRequestId recebido:', helpRequestId);
+    console.log('tipo do helpRequestId:', typeof helpRequestId);
+    console.log('userId:', userId);
+    
     if (!userId || !helpRequestId) {
       console.error('userId ou helpRequestId não fornecido');
+      toast.error('Dados inválidos para resolver pedido');
       return;
     }
     
@@ -378,15 +403,24 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      console.log('Tentando resolver pedido de ajuda. ID:', helpRequestId);
-      console.log('Tipo do ID:', typeof helpRequestId);
+      // Converter para string e validar UUID
+      const helpRequestIdStr = String(helpRequestId).trim();
+      console.log('ID após conversão:', helpRequestIdStr);
 
-      // Validar se é um UUID válido
-      if (!helpRequestId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        console.error('ID inválido:', helpRequestId);
-        toast.error('ID do pedido inválido');
+      if (!helpRequestIdStr || helpRequestIdStr === '') {
+        console.error('ID está vazio após conversão');
+        toast.error('ID do pedido está vazio');
         return;
       }
+
+      // Validar se é um UUID válido
+      if (!helpRequestIdStr.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.error('UUID inválido:', helpRequestIdStr);
+        toast.error('Formato do ID do pedido inválido');
+        return;
+      }
+
+      console.log('Executando update no Supabase...');
 
       // Use direct operations since RPC functions may not be available
       const { data, error: updateError } = await supabase
@@ -395,7 +429,7 @@ export function useSupabaseData(userId?: string) {
           is_active: false,
           resolved_at: new Date().toISOString()
         })
-        .eq('id', helpRequestId)
+        .eq('id', helpRequestIdStr)
         .eq('is_active', true)
         .select();
 
@@ -407,17 +441,20 @@ export function useSupabaseData(userId?: string) {
       }
 
       if (!data || data.length === 0) {
+        console.warn('Nenhum registro foi atualizado');
         toast.error('Pedido de ajuda não encontrado ou já resolvido');
         return;
       }
 
-      console.log('Pedido de ajuda resolvido com sucesso');
+      console.log('Pedido de ajuda resolvido com sucesso:', data);
       await fetchHelpRequests();
       toast.success('Pedido de ajuda resolvido! ✅', {
         description: 'O aluno poderá enviar novos pedidos de ajuda'
       });
     } catch (error: any) {
-      console.error('Erro ao resolver pedido de ajuda:', error);
+      console.error('=== ERRO AO RESOLVER PEDIDO ===');
+      console.error('Erro completo:', error);
+      console.error('Mensagem do erro:', error.message);
       toast.error('Erro ao resolver pedido de ajuda', {
         description: error.message || 'Erro desconhecido'
       });

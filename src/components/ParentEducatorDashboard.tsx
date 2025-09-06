@@ -36,6 +36,10 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
     req.is_active && connections.some(conn => conn.student_id === req.student_id)
   );
 
+  console.log('All help requests:', helpRequests);
+  console.log('Active help requests:', activeHelpRequests);
+  console.log('Connections:', connections);
+
   // Contar alunos online (assumindo que são online se tiveram atividade recente)
   const onlineStudents = connections.length;
 
