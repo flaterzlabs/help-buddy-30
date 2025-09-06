@@ -364,7 +364,10 @@ export function useSupabaseData(userId?: string) {
   };
 
   const resolveHelpRequest = async (helpRequestId: string) => {
-    if (!userId) return;
+    if (!userId || !helpRequestId) {
+      console.error('userId ou helpRequestId não fornecido');
+      return;
+    }
     
     try {
       const sessionToken = localStorage.getItem('session_token');
@@ -375,21 +378,37 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      console.log('Tentando resolver pedido de ajuda:', helpRequestId);
+      console.log('Tentando resolver pedido de ajuda. ID:', helpRequestId);
+      console.log('Tipo do ID:', typeof helpRequestId);
+
+      // Validar se é um UUID válido
+      if (!helpRequestId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.error('ID inválido:', helpRequestId);
+        toast.error('ID do pedido inválido');
+        return;
+      }
 
       // Use direct operations since RPC functions may not be available
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('help_requests')
         .update({
           is_active: false,
           resolved_at: new Date().toISOString()
         })
         .eq('id', helpRequestId)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .select();
+
+      console.log('Resultado da atualização:', { data, updateError });
 
       if (updateError) {
         console.error('Erro na atualização:', updateError);
         throw updateError;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error('Pedido de ajuda não encontrado ou já resolvido');
+        return;
       }
 
       console.log('Pedido de ajuda resolvido com sucesso');

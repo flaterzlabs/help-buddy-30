@@ -268,8 +268,13 @@ export function ParentEducatorDashboard({ username, role, onLogout }: ParentEduc
                           size="sm"
                           onClick={() => {
                             const activeRequest = activeHelpRequests.find(req => req.student_id === connection.student_id);
-                            if (activeRequest) {
+                            console.log('Pedido ativo encontrado:', activeRequest);
+                            if (activeRequest && activeRequest.id) {
+                              console.log('Resolvendo pedido com ID:', activeRequest.id);
                               resolveHelpRequest(activeRequest.id);
+                            } else {
+                              console.error('Pedido ativo não encontrado ou sem ID');
+                              toast.error('Erro: Pedido de ajuda não encontrado');
                             }
                           }}
                         >
