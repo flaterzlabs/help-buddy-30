@@ -375,36 +375,33 @@ export function useSupabaseData(userId?: string) {
         return;
       }
 
-      // Try RPC function first, fallback to direct operations
-      let error;
-      try {
-        const rpcResult = await rpcCall.resolveHelpRequest(sessionToken, helpRequestId);
-        error = rpcResult.error;
-      } catch (rpcError: any) {
-        console.warn('RPC not available, using direct operations:', rpcError.message);
-        
-        // Fallback to direct operations
-        const { error: updateError } = await supabase
-          .from('help_requests')
-          .update({
-            is_active: false,
-            resolved_at: new Date().toISOString()
-          })
-          .eq('id', helpRequestId)
-          .eq('is_active', true);
-        
-        error = updateError;
+      console.log('Tentando resolver pedido de ajuda:', helpRequestId);
+
+      // Use direct operations since RPC functions may not be available
+      const { error: updateError } = await supabase
+        .from('help_requests')
+        .update({
+          is_active: false,
+          resolved_at: new Date().toISOString()
+        })
+        .eq('id', helpRequestId)
+        .eq('is_active', true);
+
+      if (updateError) {
+        console.error('Erro na atualização:', updateError);
+        throw updateError;
       }
 
-      if (error) throw error;
-      
+      console.log('Pedido de ajuda resolvido com sucesso');
       await fetchHelpRequests();
       toast.success('Pedido de ajuda resolvido! ✅', {
         description: 'O aluno poderá enviar novos pedidos de ajuda'
       });
     } catch (error: any) {
       console.error('Erro ao resolver pedido de ajuda:', error);
-      toast.error('Erro ao resolver pedido de ajuda');
+      toast.error('Erro ao resolver pedido de ajuda', {
+        description: error.message || 'Erro desconhecido'
+      });
     }
   };
 
